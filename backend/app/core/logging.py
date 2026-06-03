@@ -45,7 +45,9 @@ def configure_logging(level: str = "INFO") -> None:
             "loggers": {
                 # Quiet down noisy access logs; the app emits its own.
                 "uvicorn.access": {"level": "WARNING"},
-                "sqlalchemy.engine": {"level": "WARNING"},
+                "sqlalchemy.engine": {
+                    "level": "INFO" if level.upper() == "DEBUG" else "WARNING",
+                },
             },
         }
     )

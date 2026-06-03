@@ -39,7 +39,9 @@ export function AnimatedCounter({
       duration: durationMs / 1000,
       ease: [0.16, 1, 0.3, 1],
     })
-    return controls.stop
+    return () => {
+      controls.stop()
+    }
   }, [inView, value, count, durationMs])
 
   return <motion.span ref={ref}>{rounded}</motion.span>

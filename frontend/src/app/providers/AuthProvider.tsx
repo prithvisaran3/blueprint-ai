@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { User } from '@/types'
-import { mockUser } from '@/lib/mock'
+import { mockUser } from '@/lib/mock/data'
 import { supabase } from '@/lib/supabase'
 import { USE_MOCKS } from '@/lib/env'
 

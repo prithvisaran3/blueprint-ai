@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { LayoutDashboard, FolderKanban, Activity, Sparkles, Settings } from 'lucide-react'
 import { Logo } from '@/components/shared'
 import { cn } from '@/lib/utils'
-import { PRIMARY_PROJECT_ID, PRIMARY_RUN_ID } from '@/lib/mock'
+import { PRIMARY_PROJECT_ID, PRIMARY_RUN_ID } from '@/lib/mock/data'
 
 const NAV = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },

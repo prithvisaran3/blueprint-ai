@@ -9,7 +9,7 @@ interface TooltipPayloadItem {
 
 interface ChartTooltipProps {
   active?: boolean
-  payload?: TooltipPayloadItem[]
+  payload?: readonly TooltipPayloadItem[]
   label?: string | number
 }
 

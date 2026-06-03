@@ -8,7 +8,7 @@ import { AgentMetrics } from './AgentMetrics'
 import { HealthScoreWidget } from './HealthScoreWidget'
 import { RecentGenerations } from './RecentGenerations'
 import { ProjectCard } from './ProjectCard'
-import { mockCtoReview } from '@/lib/mock'
+import { mockCtoReview } from '@/lib/mock/outputs'
 import { fadeInUp } from '@/lib/motion'
 
 export function DashboardPage() {
@@ -17,8 +17,33 @@ export function DashboardPage() {
   const projects = useProjects()
   const runs = useRuns()
 
-  if (stats.isLoading || projects.isLoading || runs.isLoading || !stats.data) {
+  const isLoading = stats.isLoading || projects.isLoading || runs.isLoading
+  const error = stats.error ?? projects.error ?? runs.error
+
+  if (isLoading || !stats.data) {
     return <DashboardSkeleton />
+  }
+
+  if (error) {
+    return (
+      <div className="glass rounded-xl border border-destructive/30 p-6 text-sm">
+        <p className="font-medium text-destructive">Could not load dashboard</p>
+        <p className="mt-2 text-muted-foreground">
+          {error instanceof Error ? error.message : 'Something went wrong fetching your data.'}
+        </p>
+        <button
+          type="button"
+          className="mt-4 text-primary underline-offset-4 hover:underline"
+          onClick={() => {
+            void stats.refetch()
+            void projects.refetch()
+            void runs.refetch()
+          }}
+        >
+          Try again
+        </button>
+      </div>
+    )
   }
 
   const firstName = user?.displayName?.split(' ')[0] ?? 'there'

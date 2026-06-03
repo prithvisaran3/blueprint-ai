@@ -1,47 +1,94 @@
 /**
  * Data source toggle.
  *
- * Re-exports either the mock data layer (`lib/mock`) or the real API client
- * (`lib/api`) based on `USE_MOCKS`, so the rest of the app (hooks, pages) is
- * agnostic to which backend is in use. The mocks are preserved unchanged; set
- * `VITE_USE_MOCKS=false` (with a configured backend) to use the real API.
+ * Re-exports either the mock data layer (`lib/mock/api`) or the real API client
+ * (`lib/api`) based on `USE_MOCKS`. Uses explicit wrapper functions (not module-
+ * level ternary bindings) so production bundlers never produce an undefined queryFn.
  */
 import type {
   WireGitHubExportResponse,
   WireJiraExportResponse,
 } from './api/types'
-import * as real from './api'
-import * as mock from './mock'
-import { mockPlanner, PRIMARY_PROJECT_ID, PRIMARY_RUN_ID } from './mock'
+import {
+  fetchCurrentUser as realFetchCurrentUser,
+  fetchDashboardStats as realFetchDashboardStats,
+  fetchProject as realFetchProject,
+  fetchProjects as realFetchProjects,
+  fetchRun as realFetchRun,
+  fetchRunDocuments as realFetchRunDocuments,
+  fetchRunLogs as realFetchRunLogs,
+  fetchRunOutputs as realFetchRunOutputs,
+  fetchRuns as realFetchRuns,
+  generate as realGenerate,
+  exportGithub as realExportGithub,
+  exportJira as realExportJira,
+  type GenerateInput as RealGenerateInput,
+} from './api'
+import {
+  fetchCurrentUser as mockFetchCurrentUser,
+  fetchDashboardStats as mockFetchDashboardStats,
+  fetchProject as mockFetchProject,
+  fetchProjects as mockFetchProjects,
+  fetchRun as mockFetchRun,
+  fetchRunDocuments as mockFetchRunDocuments,
+  fetchRunLogs as mockFetchRunLogs,
+  fetchRunOutputs as mockFetchRunOutputs,
+  fetchRuns as mockFetchRuns,
+} from './mock/api'
+import { PRIMARY_PROJECT_ID, PRIMARY_RUN_ID } from './mock/data'
+import { mockPlanner } from './mock/outputs'
 import { USE_MOCKS } from './env'
 import { sleep } from './utils'
 
 export { USE_MOCKS }
+export type GenerateInput = RealGenerateInput
 
-// --- Reads (identical signatures across mock + real) -------------------------
-export const fetchCurrentUser = USE_MOCKS ? mock.fetchCurrentUser : real.fetchCurrentUser
-export const fetchProjects = USE_MOCKS ? mock.fetchProjects : real.fetchProjects
-export const fetchProject = USE_MOCKS ? mock.fetchProject : real.fetchProject
-export const fetchRuns = USE_MOCKS ? mock.fetchRuns : real.fetchRuns
-export const fetchRun = USE_MOCKS ? mock.fetchRun : real.fetchRun
-export const fetchRunOutputs = USE_MOCKS ? mock.fetchRunOutputs : real.fetchRunOutputs
-export const fetchRunLogs = USE_MOCKS ? mock.fetchRunLogs : real.fetchRunLogs
-export const fetchRunDocuments = USE_MOCKS ? mock.fetchRunDocuments : real.fetchRunDocuments
-export const fetchDashboardStats = USE_MOCKS ? mock.fetchDashboardStats : real.fetchDashboardStats
-
-// --- Mutations: generate -----------------------------------------------------
-export interface GenerateInput {
-  ideaPrompt?: string
-  projectId?: string
-  name?: string
+// --- Reads -------------------------------------------------------------------
+export function fetchCurrentUser() {
+  return USE_MOCKS ? mockFetchCurrentUser() : realFetchCurrentUser()
 }
 
+export function fetchProjects() {
+  return USE_MOCKS ? mockFetchProjects() : realFetchProjects()
+}
+
+export function fetchProject(id: string) {
+  return USE_MOCKS ? mockFetchProject(id) : realFetchProject(id)
+}
+
+export function fetchRuns() {
+  return USE_MOCKS ? mockFetchRuns() : realFetchRuns()
+}
+
+export function fetchRun(id: string) {
+  return USE_MOCKS ? mockFetchRun(id) : realFetchRun(id)
+}
+
+export function fetchRunOutputs(id: string) {
+  return USE_MOCKS ? mockFetchRunOutputs(id) : realFetchRunOutputs(id)
+}
+
+export function fetchRunLogs(id: string) {
+  return USE_MOCKS ? mockFetchRunLogs(id) : realFetchRunLogs(id)
+}
+
+export function fetchRunDocuments(id: string) {
+  return USE_MOCKS ? mockFetchRunDocuments(id) : realFetchRunDocuments(id)
+}
+
+export function fetchDashboardStats() {
+  return USE_MOCKS ? mockFetchDashboardStats() : realFetchDashboardStats()
+}
+
+// --- Mutations: generate -----------------------------------------------------
 async function mockGenerate(): Promise<{ runId: string; projectId: string; status: string }> {
   await sleep(400)
   return { runId: PRIMARY_RUN_ID, projectId: PRIMARY_PROJECT_ID, status: 'queued' }
 }
 
-export const generate = USE_MOCKS ? mockGenerate : real.generate
+export function generate(input: GenerateInput) {
+  return USE_MOCKS ? mockGenerate() : realGenerate(input)
+}
 
 // --- Mutations: exports (Phase 6) -------------------------------------------
 async function mockExportJira(input: {
@@ -100,5 +147,16 @@ async function mockExportGithub(input: {
   return { repo: input.repo ?? null, dry_run: true, count: issues.length, created: 0, issues }
 }
 
-export const exportJira = USE_MOCKS ? mockExportJira : real.exportJira
-export const exportGithub = USE_MOCKS ? mockExportGithub : real.exportGithub
+export function exportJira(input: { runId: string; projectKey?: string }) {
+  return USE_MOCKS ? mockExportJira(input) : realExportJira(input)
+}
+
+export function exportGithub(input: {
+  runId: string
+  repo?: string
+  token?: string
+  dryRun?: boolean
+  labels?: string[]
+}) {
+  return USE_MOCKS ? mockExportGithub(input) : realExportGithub(input)
+}

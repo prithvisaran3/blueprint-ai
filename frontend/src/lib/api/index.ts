@@ -126,8 +126,8 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     apiFetch<Page<WireAgentRun>>('/history', { params: { limit: 100 } }),
     apiFetch<Page<WireProject>>('/projects', { params: { limit: 1 } }).catch(() => null),
   ])
-  const runs = history.items
-  const totalTokens = runs.reduce((sum, r) => sum + r.total_tokens, 0)
+  const runs = history?.items ?? []
+  const totalTokens = runs.reduce((sum, r) => sum + (r.total_tokens ?? 0), 0)
   const healthScores = runs
     .map((r) => (typeof r.health_score?.overall === 'number' ? (r.health_score.overall as number) : null))
     .filter((v): v is number => v != null)
@@ -151,7 +151,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
   return {
     totalProjects: projects?.total ?? 0,
-    totalRuns: history.total,
+    totalRuns: history?.total ?? runs.length,
     totalTokens,
     avgHealthScore,
     usage,

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { AgentKey, AgentStatus, ExecutionLog, LogLevel, StreamEvent } from '@/types'
 import { AGENT_ORDER } from '@/types'
-import { buildExecutionScript, type AgentScriptStep } from '@/lib/mock'
+import { buildExecutionScript, type AgentScriptStep } from '@/lib/mock/stream'
 
 export interface AgentRuntimeState {
   status: AgentStatus

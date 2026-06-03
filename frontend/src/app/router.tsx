@@ -5,6 +5,7 @@ import { AppShell } from './layouts/AppShell'
 import { ProtectedRoute } from './ProtectedRoute'
 import { LandingPage } from '@/features/landing/LandingPage'
 import { LoginPage } from '@/features/auth/LoginPage'
+import { RouteErrorPage } from '@/app/RouteErrorPage'
 
 // Code-split the heavier authenticated screens (Recharts, React Flow, Monaco).
 const DashboardPage = lazy(() =>
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
         <AppShell />
       </ProtectedRoute>
     ),
+    errorElement: <RouteErrorPage />,
     children: [
       { path: '/dashboard', element: <Lazy><DashboardPage /></Lazy> },
       { path: '/projects/:id', element: <Lazy><ProjectDetailPage /></Lazy> },
