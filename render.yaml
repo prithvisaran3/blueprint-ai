@@ -1,0 +1,45 @@
+# Render deployment for the Blueprint AI backend (FastAPI).
+# Free tier. Connect this repo in the Render dashboard and it will pick up this
+# blueprint automatically (or use "New + > Blueprint").
+#
+# Secrets (DATABASE_URL, SUPABASE_*, GEMINI_API_KEY) are marked `sync: false`
+# so Render prompts for them on first deploy instead of reading them from here.
+services:
+  - type: web
+    name: blueprint-ai-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -e .
+    # Run migrations, then boot the API. Render injects $PORT.
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.5"
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      # Supabase Postgres connection string (Session pooler recommended on free tier).
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_JWT_AUD
+        value: authenticated
+      # Comma-separated allowed frontend origins (set to your Vercel URL).
+      - key: CORS_ORIGINS
+        sync: false
+      # Google Gemini key (optional — stub fallback runs without it).
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: AUTH_DEV_BYPASS
+        value: "false"

@@ -1,0 +1,68 @@
+# Blueprint AI — Frontend
+
+The web client for **Blueprint AI**, a multi-agent engineering intelligence platform that turns a
+single product idea into a full architecture, delivery plan, scaffolded code, QA review, docs, and a
+CTO sign-off.
+
+> **Phase 2 (Frontend Foundation).** This app currently runs entirely on **mock data** — no backend
+> calls. A later integration phase swaps the mock layer for the real FastAPI + Supabase API. The
+> mock data and TypeScript contracts are designed so that swap is a drop-in.
+
+## Stack
+
+React 19 · TypeScript (strict) · Vite · Tailwind CSS v4 · shadcn/ui · Framer Motion · TanStack Query
+· React Flow (`@xyflow/react`) · Zustand · React Hook Form + Zod · Monaco Editor · Recharts ·
+React Markdown · Lucide.
+
+## Getting started
+
+```bash
+npm install            # install dependencies
+npm run dev            # start the dev server (http://localhost:5173)
+npm run build          # type-check (tsc -b) + production build to dist/
+npm run preview        # preview the production build
+npm run lint           # run ESLint
+```
+
+Copy `.env.example` to `.env.local` to configure integration variables (not required for Phase 2).
+
+## Routes
+
+| Path                 | Screen                                                        |
+| -------------------- | ------------------------------------------------------------- |
+| `/`                  | Landing — animated hero, feature grid, agent pipeline, CTA    |
+| `/login`             | Auth (stubbed sign-in)                                        |
+| `/dashboard`         | Projects, recent runs, health score, agent metrics, analytics |
+| `/projects/:id`      | Project detail + latest run summary                           |
+| `/executions/:runId` | Live multi-agent execution graph (React Flow + mock stream)   |
+| `/workspace/:runId`  | Tabbed results: Architecture · Planning · Backend · Frontend · QA · Documentation · CTO Review · Insights |
+
+## Project structure (feature-based)
+
+```
+src/
+  app/            # router, providers (Query/Theme/Auth), layouts (AppShell/Sidebar/Topbar)
+  features/       # landing, auth, dashboard, projects, execution, workspace
+  components/
+    ui/           # shadcn primitives
+    shared/       # GlassCard, AnimatedCounter, HealthRing, GradientMesh, Skeletons, PageTransition…
+  lib/
+    mock/         # mock API + data + scripted execution stream  ← swap for real API later
+    agents.ts     # agent display metadata
+    motion.ts     # Framer Motion variants library
+    utils.ts
+  stores/         # Zustand (execution UI state machine)
+  hooks/          # TanStack Query hooks, useTypingEffect
+  types/          # shared TS types mirroring backend Pydantic schemas
+```
+
+## Swapping mocks for the real API
+
+- `src/lib/mock/api.ts` mirrors the REST endpoints from the architecture plan. Replace these
+  functions with a real client hitting `VITE_API_BASE_URL`; the TanStack Query hooks in
+  `src/hooks/queries.ts` stay unchanged.
+- `src/features/execution/useAgentStream.ts` plays a scripted timeline via the Zustand store. Swap
+  `start()` for an `EventSource` connected to `GET /executions/{runId}/stream` and dispatch SSE
+  events into the store.
+- `src/app/providers/AuthProvider.tsx` is a stub. Replace with Supabase Auth + JWT.
+```

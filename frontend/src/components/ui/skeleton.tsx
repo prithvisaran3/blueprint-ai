@@ -1,0 +1,16 @@
+import * as React from 'react'
+import { cn } from '@/lib/utils'
+
+function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        'rounded-md bg-gradient-to-r from-muted via-muted/40 to-muted animate-shimmer',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Skeleton }
