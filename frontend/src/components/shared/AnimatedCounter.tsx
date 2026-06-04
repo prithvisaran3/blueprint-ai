@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { animate, useInView } from 'framer-motion'
+import { useInView } from 'framer-motion'
 
 interface AnimatedCounterProps {
   value: number
@@ -24,7 +24,11 @@ function formatValue(
   return `${prefix}${dec ? `${grouped}.${dec}` : grouped}${suffix}`
 }
 
-/** Counts up to `value` when scrolled into view. */
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3)
+}
+
+/** Counts up to `value` when scrolled into view (rAF — avoids framer-motion `animate` in prod bundles). */
 export function AnimatedCounter({
   value,
   decimals = 0,
@@ -41,14 +45,18 @@ export function AnimatedCounter({
 
   useEffect(() => {
     if (!inView) return
-    const controls = animate(0, value, {
-      duration: durationMs / 1000,
-      ease: [0.16, 1, 0.3, 1],
-      onUpdate: (latest) => {
-        setText(formatValue(latest, decimals, prefix, suffix, separator))
-      },
-    })
-    return () => controls.stop()
+    const start = performance.now()
+    let frame = 0
+
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs)
+      const current = value * easeOutCubic(t)
+      setText(formatValue(current, decimals, prefix, suffix, separator))
+      if (t < 1) frame = requestAnimationFrame(tick)
+    }
+
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
   }, [inView, value, decimals, durationMs, prefix, suffix, separator])
 
   return <span ref={ref}>{text}</span>

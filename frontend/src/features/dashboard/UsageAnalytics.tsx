@@ -58,13 +58,7 @@ export function UsageAnalytics({ data }: { data: UsagePoint[] }) {
             />
             <YAxis yAxisId="right" orientation="right" hide />
             <Tooltip
-              content={(props) => (
-                <ChartTooltip
-                  active={props.active}
-                  payload={props.payload as unknown as readonly Record<string, unknown>[] | undefined}
-                  label={props.label}
-                />
-              )}
+              content={(props) => <ChartTooltip {...props} />}
               cursor={{ stroke: 'var(--color-border)' }}
             />
             <Area

@@ -2,18 +2,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   exportGithub,
   exportJira,
-  fetchCurrentUser,
-  fetchDashboardStats,
-  fetchProject,
-  fetchProjects,
-  fetchRun,
-  fetchRunDocuments,
-  fetchRunLogs,
-  fetchRunOutputs,
-  fetchRuns,
   generate,
   type GenerateInput,
 } from '@/lib/data'
+import {
+  loadCurrentUser,
+  loadDashboardStats,
+  loadProject,
+  loadProjects,
+  loadRun,
+  loadRunDocuments,
+  loadRunLogs,
+  loadRunOutputs,
+  loadRuns,
+} from '@/lib/loaders'
 
 export const queryKeys = {
   user: ['user'] as const,
@@ -28,29 +30,29 @@ export const queryKeys = {
 }
 
 export function useCurrentUser() {
-  return useQuery({ queryKey: queryKeys.user, queryFn: () => fetchCurrentUser() })
+  return useQuery({ queryKey: queryKeys.user, queryFn: loadCurrentUser })
 }
 
 export function useProjects() {
-  return useQuery({ queryKey: queryKeys.projects, queryFn: () => fetchProjects() })
+  return useQuery({ queryKey: queryKeys.projects, queryFn: loadProjects })
 }
 
 export function useProject(id: string) {
   return useQuery({
     queryKey: queryKeys.project(id),
-    queryFn: () => fetchProject(id),
+    queryFn: () => loadProject(id),
     enabled: !!id,
   })
 }
 
 export function useRuns() {
-  return useQuery({ queryKey: queryKeys.runs, queryFn: () => fetchRuns() })
+  return useQuery({ queryKey: queryKeys.runs, queryFn: loadRuns })
 }
 
 export function useRun(id: string) {
   return useQuery({
     queryKey: queryKeys.run(id),
-    queryFn: () => fetchRun(id),
+    queryFn: () => loadRun(id),
     enabled: !!id,
   })
 }
@@ -58,7 +60,7 @@ export function useRun(id: string) {
 export function useRunOutputs(id: string) {
   return useQuery({
     queryKey: queryKeys.runOutputs(id),
-    queryFn: () => fetchRunOutputs(id),
+    queryFn: () => loadRunOutputs(id),
     enabled: !!id,
   })
 }
@@ -66,7 +68,7 @@ export function useRunOutputs(id: string) {
 export function useRunLogs(id: string) {
   return useQuery({
     queryKey: queryKeys.runLogs(id),
-    queryFn: () => fetchRunLogs(id),
+    queryFn: () => loadRunLogs(id),
     enabled: !!id,
   })
 }
@@ -74,13 +76,13 @@ export function useRunLogs(id: string) {
 export function useRunDocuments(id: string) {
   return useQuery({
     queryKey: queryKeys.runDocuments(id),
-    queryFn: () => fetchRunDocuments(id),
+    queryFn: () => loadRunDocuments(id),
     enabled: !!id,
   })
 }
 
 export function useDashboardStats() {
-  return useQuery({ queryKey: queryKeys.dashboard, queryFn: () => fetchDashboardStats() })
+  return useQuery({ queryKey: queryKeys.dashboard, queryFn: loadDashboardStats })
 }
 
 // --- Mutations ---------------------------------------------------------------
