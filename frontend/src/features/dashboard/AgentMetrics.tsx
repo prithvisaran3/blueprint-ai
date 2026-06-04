@@ -15,13 +15,15 @@ export function AgentMetrics({ metrics }: { metrics: AgentMetric[] }) {
       <div className="mt-5 space-y-3.5">
         {metrics.map((m, i) => {
           const meta = AGENT_META[m.agent]
+          if (!meta) return null
+          const Icon = meta.icon
           return (
             <div key={m.agent} className="flex items-center gap-3">
               <span
                 className="inline-flex size-7 shrink-0 items-center justify-center rounded-md"
                 style={{ backgroundColor: `${meta.color}1f`, color: meta.color }}
               >
-                <meta.icon className="size-3.5" />
+                <Icon className="size-3.5" />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between text-xs">

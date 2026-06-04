@@ -28,39 +28,59 @@ export const queryKeys = {
 }
 
 export function useCurrentUser() {
-  return useQuery({ queryKey: queryKeys.user, queryFn: fetchCurrentUser })
+  return useQuery({ queryKey: queryKeys.user, queryFn: () => fetchCurrentUser() })
 }
 
 export function useProjects() {
-  return useQuery({ queryKey: queryKeys.projects, queryFn: fetchProjects })
+  return useQuery({ queryKey: queryKeys.projects, queryFn: () => fetchProjects() })
 }
 
 export function useProject(id: string) {
-  return useQuery({ queryKey: queryKeys.project(id), queryFn: () => fetchProject(id), enabled: !!id })
+  return useQuery({
+    queryKey: queryKeys.project(id),
+    queryFn: () => fetchProject(id),
+    enabled: !!id,
+  })
 }
 
 export function useRuns() {
-  return useQuery({ queryKey: queryKeys.runs, queryFn: fetchRuns })
+  return useQuery({ queryKey: queryKeys.runs, queryFn: () => fetchRuns() })
 }
 
 export function useRun(id: string) {
-  return useQuery({ queryKey: queryKeys.run(id), queryFn: () => fetchRun(id), enabled: !!id })
+  return useQuery({
+    queryKey: queryKeys.run(id),
+    queryFn: () => fetchRun(id),
+    enabled: !!id,
+  })
 }
 
 export function useRunOutputs(id: string) {
-  return useQuery({ queryKey: queryKeys.runOutputs(id), queryFn: () => fetchRunOutputs(id), enabled: !!id })
+  return useQuery({
+    queryKey: queryKeys.runOutputs(id),
+    queryFn: () => fetchRunOutputs(id),
+    enabled: !!id,
+  })
 }
 
 export function useRunLogs(id: string) {
-  return useQuery({ queryKey: queryKeys.runLogs(id), queryFn: () => fetchRunLogs(id), enabled: !!id })
+  return useQuery({
+    queryKey: queryKeys.runLogs(id),
+    queryFn: () => fetchRunLogs(id),
+    enabled: !!id,
+  })
 }
 
 export function useRunDocuments(id: string) {
-  return useQuery({ queryKey: queryKeys.runDocuments(id), queryFn: () => fetchRunDocuments(id), enabled: !!id })
+  return useQuery({
+    queryKey: queryKeys.runDocuments(id),
+    queryFn: () => fetchRunDocuments(id),
+    enabled: !!id,
+  })
 }
 
 export function useDashboardStats() {
-  return useQuery({ queryKey: queryKeys.dashboard, queryFn: fetchDashboardStats })
+  return useQuery({ queryKey: queryKeys.dashboard, queryFn: () => fetchDashboardStats() })
 }
 
 // --- Mutations ---------------------------------------------------------------

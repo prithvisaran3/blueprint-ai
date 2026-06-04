@@ -1,16 +1,27 @@
-import { useEffect } from 'react'
-import { animate, useInView, useMotionValue, useTransform, motion } from 'framer-motion'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { animate, useInView } from 'framer-motion'
 
 interface AnimatedCounterProps {
   value: number
-  /** Number of decimals to render. */
   decimals?: number
   durationMs?: number
   prefix?: string
   suffix?: string
-  /** Add thousands separators. */
   separator?: boolean
+}
+
+function formatValue(
+  n: number,
+  decimals: number,
+  prefix: string,
+  suffix: string,
+  separator: boolean,
+): string {
+  const fixed = n.toFixed(decimals)
+  if (!separator) return `${prefix}${fixed}${suffix}`
+  const [int, dec] = fixed.split('.')
+  const grouped = Number(int).toLocaleString('en-US')
+  return `${prefix}${dec ? `${grouped}.${dec}` : grouped}${suffix}`
 }
 
 /** Counts up to `value` when scrolled into view. */
@@ -24,25 +35,21 @@ export function AnimatedCounter({
 }: AnimatedCounterProps) {
   const ref = useRef<HTMLSpanElement>(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
-  const count = useMotionValue(0)
-  const rounded = useTransform(count, (latest) => {
-    const fixed = latest.toFixed(decimals)
-    if (!separator) return `${prefix}${fixed}${suffix}`
-    const [int, dec] = fixed.split('.')
-    const grouped = Number(int).toLocaleString('en-US')
-    return `${prefix}${dec ? `${grouped}.${dec}` : grouped}${suffix}`
-  })
+  const [text, setText] = useState(() =>
+    formatValue(0, decimals, prefix, suffix, separator),
+  )
 
   useEffect(() => {
     if (!inView) return
-    const controls = animate(count, value, {
+    const controls = animate(0, value, {
       duration: durationMs / 1000,
       ease: [0.16, 1, 0.3, 1],
+      onUpdate: (latest) => {
+        setText(formatValue(latest, decimals, prefix, suffix, separator))
+      },
     })
-    return () => {
-      controls.stop()
-    }
-  }, [inView, value, count, durationMs])
+    return () => controls.stop()
+  }, [inView, value, decimals, durationMs, prefix, suffix, separator])
 
-  return <motion.span ref={ref}>{rounded}</motion.span>
+  return <span ref={ref}>{text}</span>
 }

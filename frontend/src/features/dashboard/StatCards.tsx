@@ -29,7 +29,9 @@ export function StatCards({ stats }: { stats: DashboardStats }) {
       animate="visible"
       className="grid grid-cols-2 gap-4 lg:grid-cols-4"
     >
-      {items.map((stat) => (
+      {items.map((stat) => {
+        const Icon = stat.icon
+        return (
         <motion.div key={stat.label} variants={fadeInUp}>
           <GlassCard interactive className="h-full">
             <div className="flex items-center justify-between">
@@ -38,7 +40,7 @@ export function StatCards({ stats }: { stats: DashboardStats }) {
                 className="inline-flex size-8 items-center justify-center rounded-lg ring-1 ring-inset"
                 style={{ backgroundColor: `${stat.color}1f`, color: stat.color, borderColor: `${stat.color}33` }}
               >
-                <stat.icon className="size-4" />
+                <Icon className="size-4" />
               </span>
             </div>
             <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
@@ -47,7 +49,8 @@ export function StatCards({ stats }: { stats: DashboardStats }) {
             <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
           </GlassCard>
         </motion.div>
-      ))}
+        )
+      })}
     </motion.div>
   )
 }

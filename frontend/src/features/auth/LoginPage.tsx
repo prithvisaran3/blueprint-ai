@@ -155,7 +155,8 @@ export function LoginPage() {
           </Button>
           {!isMock && (
             <p className="mt-2 text-center text-[11px] text-muted-foreground">
-              GitHub 404 after sign-in? Fix the OAuth Client ID in Supabase (see docs/AUTH_GITHUB.md).
+              GitHub issues? Set Supabase Site URL to this app’s domain (not localhost:3000). See
+              docs/AUTH_GITHUB.md.
             </p>
           )}
 

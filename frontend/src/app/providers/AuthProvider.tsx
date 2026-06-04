@@ -4,6 +4,7 @@ import type { User } from '@/types'
 import { mockUser } from '@/lib/mock/data'
 import { supabase } from '@/lib/supabase'
 import { USE_MOCKS } from '@/lib/env'
+import { authCallbackUrl } from '@/lib/site'
 
 interface AuthContextValue {
   user: User | null
@@ -100,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: authCallbackUrl(),
         skipBrowserRedirect: false,
       },
     })

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { debugError, debugLog } from '@/lib/debug'
 
 /**
- * OAuth return URL — Supabase appends tokens to the hash on redirect.
+ * OAuth return URL — Supabase redirects here with ?code= (PKCE) or hash tokens.
  * A dedicated public route avoids ProtectedRoute sending users to /login
  * before the session is parsed.
  */
@@ -23,7 +23,7 @@ export function AuthCallbackPage() {
 
     let cancelled = false
 
-    async function finish(client: SupabaseClient) {
+    async function finish(sb: SupabaseClient) {
       const params = new URLSearchParams(window.location.search)
       const oauthError = params.get('error_description') ?? params.get('error')
       if (oauthError) {
@@ -34,14 +34,21 @@ export function AuthCallbackPage() {
       try {
         const code = params.get('code')
         if (code) {
-          const { error: exchangeError } = await client.auth.exchangeCodeForSession(code)
+          const { error: exchangeError } = await sb.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
         }
 
-        const { data, error: err } = await client.auth.getSession()
+        // Hash-based implicit flow: detectSessionInUrl may need a tick to parse.
+        if (window.location.hash.includes('access_token')) {
+          await new Promise((r) => setTimeout(r, 100))
+        }
+
+        const { data, error: err } = await sb.auth.getSession()
         if (err) throw err
         if (!data.session) {
-          throw new Error('No session after sign-in. Check Supabase redirect URLs and GitHub OAuth settings.')
+          throw new Error(
+            'No session after sign-in. In Supabase → URL Configuration, set Site URL to your Vercel domain (not localhost:3000) and add /auth/callback to Redirect URLs.',
+          )
         }
 
         debugLog('auth', 'OAuth callback session established', { userId: data.session.user.id })
@@ -54,9 +61,19 @@ export function AuthCallbackPage() {
       }
     }
 
+    const { data: listener } = client.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return
+      if (event === 'SIGNED_IN' && session) {
+        debugLog('auth', 'OAuth SIGNED_IN via listener', { userId: session.user.id })
+        navigate('/dashboard', { replace: true })
+      }
+    })
+
     void finish(client)
+
     return () => {
       cancelled = true
+      listener.subscription.unsubscribe()
     }
   }, [navigate])
 
@@ -66,8 +83,10 @@ export function AuthCallbackPage() {
         <div className="max-w-md space-y-4 text-center">
           <p className="text-sm text-destructive">{error}</p>
           <p className="text-xs text-muted-foreground">
-            GitHub sign-in uses Supabase Auth. In Supabase → Authentication → Providers → GitHub,
-            the Client ID must be your GitHub OAuth App ID (looks like Ov23…), not your email.
+            Supabase → Authentication → URL Configuration: set <strong>Site URL</strong> to your
+            live app (e.g. https://blueprint-ai-rust.vercel.app), not localhost:3000. Add{' '}
+            <code className="text-foreground">/auth/callback</code> under Redirect URLs. See
+            docs/AUTH_GITHUB.md.
           </p>
           <a href="/login" className="text-sm text-primary underline">
             Back to login

@@ -29,18 +29,25 @@ instead of a GitHub OAuth App ID.
 3. Paste **Client ID** and **Client secret** from step 1 (not your email)
 4. Save
 
-### 3. Redirect URLs
+### 3. URL Configuration (fixes localhost:3000 redirect)
 
-**Authentication** → **URL Configuration** → **Redirect URLs**, add:
+**Authentication** → **URL Configuration**:
+
+| Field | Value |
+|--------|--------|
+| **Site URL** | `https://blueprint-ai-rust.vercel.app` (your production Vercel URL — **not** `http://localhost:3000`) |
+| **Redirect URLs** | Add every origin you use (one per line): |
 
 ```
 http://localhost:5173/auth/callback
 https://blueprint-ai-rust.vercel.app/auth/callback
 ```
 
-(Use your real Vercel domain if different.)
+If **Site URL** is `localhost:3000`, GitHub will send you there after authorize and the page will not load.
 
-**Site URL** can be `http://localhost:5173` for local dev.
+**Vercel env (recommended):** set `VITE_SITE_URL=https://blueprint-ai-rust.vercel.app` so OAuth always uses the production origin.
+
+For local dev only, you can temporarily set Site URL to `http://localhost:5173`.
 
 ### 4. Retry
 
