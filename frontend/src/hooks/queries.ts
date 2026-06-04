@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { USE_MOCKS } from '@/lib/env'
 import {
   exportGithub,
   exportJira,
@@ -6,16 +7,27 @@ import {
   type GenerateInput,
 } from '@/lib/data'
 import {
-  loadCurrentUser,
-  loadDashboardStats,
-  loadProject,
-  loadProjects,
-  loadRun,
-  loadRunDocuments,
-  loadRunLogs,
-  loadRunOutputs,
-  loadRuns,
-} from '@/lib/loaders'
+  fetchCurrentUser as apiFetchCurrentUser,
+  fetchDashboardStats as apiFetchDashboardStats,
+  fetchProject as apiFetchProject,
+  fetchProjects as apiFetchProjects,
+  fetchRun as apiFetchRun,
+  fetchRunDocuments as apiFetchRunDocuments,
+  fetchRunLogs as apiFetchRunLogs,
+  fetchRunOutputs as apiFetchRunOutputs,
+  fetchRuns as apiFetchRuns,
+} from '@/lib/api'
+import {
+  fetchCurrentUser as mockFetchCurrentUser,
+  fetchDashboardStats as mockFetchDashboardStats,
+  fetchProject as mockFetchProject,
+  fetchProjects as mockFetchProjects,
+  fetchRun as mockFetchRun,
+  fetchRunDocuments as mockFetchRunDocuments,
+  fetchRunLogs as mockFetchRunLogs,
+  fetchRunOutputs as mockFetchRunOutputs,
+  fetchRuns as mockFetchRuns,
+} from '@/lib/mock/api'
 
 export const queryKeys = {
   user: ['user'] as const,
@@ -30,29 +42,38 @@ export const queryKeys = {
 }
 
 export function useCurrentUser() {
-  return useQuery({ queryKey: queryKeys.user, queryFn: loadCurrentUser })
+  return useQuery({
+    queryKey: queryKeys.user,
+    queryFn: () => (USE_MOCKS ? mockFetchCurrentUser() : apiFetchCurrentUser()),
+  })
 }
 
 export function useProjects() {
-  return useQuery({ queryKey: queryKeys.projects, queryFn: loadProjects })
+  return useQuery({
+    queryKey: queryKeys.projects,
+    queryFn: () => (USE_MOCKS ? mockFetchProjects() : apiFetchProjects()),
+  })
 }
 
 export function useProject(id: string) {
   return useQuery({
     queryKey: queryKeys.project(id),
-    queryFn: () => loadProject(id),
+    queryFn: () => (USE_MOCKS ? mockFetchProject(id) : apiFetchProject(id)),
     enabled: !!id,
   })
 }
 
 export function useRuns() {
-  return useQuery({ queryKey: queryKeys.runs, queryFn: loadRuns })
+  return useQuery({
+    queryKey: queryKeys.runs,
+    queryFn: () => (USE_MOCKS ? mockFetchRuns() : apiFetchRuns()),
+  })
 }
 
 export function useRun(id: string) {
   return useQuery({
     queryKey: queryKeys.run(id),
-    queryFn: () => loadRun(id),
+    queryFn: () => (USE_MOCKS ? mockFetchRun(id) : apiFetchRun(id)),
     enabled: !!id,
   })
 }
@@ -60,7 +81,7 @@ export function useRun(id: string) {
 export function useRunOutputs(id: string) {
   return useQuery({
     queryKey: queryKeys.runOutputs(id),
-    queryFn: () => loadRunOutputs(id),
+    queryFn: () => (USE_MOCKS ? mockFetchRunOutputs(id) : apiFetchRunOutputs(id)),
     enabled: !!id,
   })
 }
@@ -68,7 +89,7 @@ export function useRunOutputs(id: string) {
 export function useRunLogs(id: string) {
   return useQuery({
     queryKey: queryKeys.runLogs(id),
-    queryFn: () => loadRunLogs(id),
+    queryFn: () => (USE_MOCKS ? mockFetchRunLogs(id) : apiFetchRunLogs(id)),
     enabled: !!id,
   })
 }
@@ -76,13 +97,16 @@ export function useRunLogs(id: string) {
 export function useRunDocuments(id: string) {
   return useQuery({
     queryKey: queryKeys.runDocuments(id),
-    queryFn: () => loadRunDocuments(id),
+    queryFn: () => (USE_MOCKS ? mockFetchRunDocuments(id) : apiFetchRunDocuments(id)),
     enabled: !!id,
   })
 }
 
 export function useDashboardStats() {
-  return useQuery({ queryKey: queryKeys.dashboard, queryFn: loadDashboardStats })
+  return useQuery({
+    queryKey: queryKeys.dashboard,
+    queryFn: () => (USE_MOCKS ? mockFetchDashboardStats() : apiFetchDashboardStats()),
+  })
 }
 
 // --- Mutations ---------------------------------------------------------------
