@@ -1,11 +1,12 @@
+import { SITE_URL } from './env'
+
 /**
  * Canonical app origin for OAuth redirects.
- * Set VITE_SITE_URL on Vercel to your production domain so redirects never
- * fall back to a wrong Supabase Site URL (e.g. localhost:3000).
+ * Set VITE_SITE_URL in .env (local) or Vercel (prod) so `redirectTo` always matches
+ * Supabase URL Configuration — otherwise Supabase falls back to Site URL (often :3000).
  */
 export function getAppOrigin(): string {
-  const configured = import.meta.env.VITE_SITE_URL?.replace(/\/$/, '')
-  if (configured) return configured
+  if (SITE_URL) return SITE_URL
   if (typeof window !== 'undefined') return window.location.origin
   return ''
 }

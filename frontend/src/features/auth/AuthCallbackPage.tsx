@@ -78,16 +78,38 @@ export function AuthCallbackPage() {
   }, [navigate])
 
   if (error) {
+    const duplicateEmail = /multiple accounts with the same email/i.test(error)
     return (
       <div className="grid min-h-screen place-items-center bg-background px-4">
         <div className="max-w-md space-y-4 text-center">
           <p className="text-sm text-destructive">{error}</p>
-          <p className="text-xs text-muted-foreground">
-            Supabase → Authentication → URL Configuration: set <strong>Site URL</strong> to your
-            live app (e.g. https://blueprint-ai-rust.vercel.app), not localhost:3000. Add{' '}
-            <code className="text-foreground">/auth/callback</code> under Redirect URLs. See
-            docs/AUTH_GITHUB.md.
-          </p>
+          {duplicateEmail ? (
+            <div className="space-y-2 text-left text-xs text-muted-foreground">
+              <p>
+                Supabase found <strong>two user records</strong> with the same email (e.g. email
+                sign-up and GitHub OAuth). Automatic linking cannot pick which account to use.
+              </p>
+              <ol className="list-inside list-decimal space-y-1">
+                <li>
+                  Supabase Dashboard → <strong>Authentication → Users</strong>
+                </li>
+                <li>Search your email — delete the duplicate account(s); keep one.</li>
+                <li>Sign in again with <strong>Continue with GitHub</strong>.</li>
+              </ol>
+              <p>
+                After a clean sign-in, use only GitHub (or only email) for that address. See{' '}
+                <code className="text-foreground">docs/AUTH_GITHUB.md</code> (duplicate accounts).
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Supabase → Authentication → URL Configuration: set <strong>Site URL</strong> to your
+              app origin (e.g. <code className="text-foreground">http://localhost:5173</code> for
+              local dev or your Vercel URL for prod), not localhost:3000. Add{' '}
+              <code className="text-foreground">/auth/callback</code> under Redirect URLs. See
+              docs/AUTH_GITHUB.md.
+            </p>
+          )}
           <a href="/login" className="text-sm text-primary underline">
             Back to login
           </a>

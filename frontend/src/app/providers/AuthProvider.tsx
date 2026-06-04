@@ -4,7 +4,8 @@ import type { User } from '@/types'
 import { mockUser } from '@/lib/mock/data'
 import { supabase } from '@/lib/supabase'
 import { USE_MOCKS } from '@/lib/env'
-import { authCallbackUrl } from '@/lib/site'
+import { debugLog, debugWarn } from '@/lib/debug'
+import { authCallbackUrl, getAppOrigin } from '@/lib/site'
 
 interface AuthContextValue {
   user: User | null
@@ -118,14 +119,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await login()
       return
     }
-    const { error } = await supabase.auth.signInWithOAuth({
+    // Clear any stale Blueprint session so this click starts a fresh OAuth flow.
+    await supabase.auth.signOut({ scope: 'local' })
+    setUser(null)
+    window.localStorage.removeItem(STORAGE_KEY)
+
+    const redirectTo = authCallbackUrl()
+    debugLog('auth', 'GitHub OAuth starting', {
+      redirectTo,
+      origin: getAppOrigin(),
+      windowOrigin: typeof window !== 'undefined' ? window.location.origin : '',
+    })
+
+    if (redirectTo.includes('localhost:3000')) {
+      debugWarn(
+        'auth',
+        'redirectTo uses port 3000 — set VITE_SITE_URL=http://localhost:5173 and fix Supabase Site URL',
+      )
+    }
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: authCallbackUrl(),
-        skipBrowserRedirect: false,
+        redirectTo,
+        // Force GitHub account picker so different people can use their own GitHub login.
+        // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+        queryParams: { prompt: 'select_account' },
+        skipBrowserRedirect: import.meta.env.DEV,
       },
     })
     if (error) throw error
+    if (data?.url) {
+      debugLog('auth', 'Navigating to OAuth provider', data.url)
+      window.location.assign(data.url)
+    }
   }, [login])
 
   const logout = useCallback(async () => {

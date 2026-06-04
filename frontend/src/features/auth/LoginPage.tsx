@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator'
 import { GradientMesh, Logo } from '@/components/shared'
 import { useAuth } from '@/app/providers'
 import { fadeInUp, staggerContainer } from '@/lib/motion'
+import { AuthDebugPanel } from './AuthDebugPanel'
 
 export function LoginPage() {
   const { login, signUp, loginWithGitHub, isMock } = useAuth()
@@ -154,11 +155,13 @@ export function LoginPage() {
             <GitBranch className="size-4" /> Continue with GitHub
           </Button>
           {!isMock && (
-            <p className="mt-2 text-center text-[11px] text-muted-foreground">
-              GitHub issues? Set Supabase Site URL to this app’s domain (not localhost:3000). See
-              docs/AUTH_GITHUB.md.
+            <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
+              Each GitHub account gets its own Blueprint workspace. You will be asked which GitHub
+              account to use — sign out of Blueprint first, or use a private window, to test as
+              someone else.
             </p>
           )}
+          <AuthDebugPanel />
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
             {mode === 'signup' ? 'Already have an account?' : 'New here?'}{' '}

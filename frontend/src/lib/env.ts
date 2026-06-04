@@ -20,6 +20,9 @@ export const SSE_BASE_URL = (import.meta.env.VITE_SSE_BASE_URL ?? API_BASE_URL).
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? ''
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? ''
 
+/** Explicit app origin for OAuth (overrides window.location when set). */
+export const SITE_URL = (import.meta.env.VITE_SITE_URL ?? '').replace(/\/$/, '')
+
 /** Whether a usable Supabase project is configured (URL + anon key, not the placeholder). */
 export const HAS_SUPABASE =
   !!SUPABASE_URL &&

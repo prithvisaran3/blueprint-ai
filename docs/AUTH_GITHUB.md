@@ -52,3 +52,40 @@ For local dev only, you can temporarily set Site URL to `http://localhost:5173`.
 ### 4. Retry
 
 Sign out, then **Continue with GitHub** on `/login`. You should land on `/auth/callback`, then `/dashboard`.
+
+## Duplicate email / linking error
+
+If sign-in fails with:
+
+```text
+Multiple accounts with the same email address in the same linking domain detected: default
+```
+
+Supabase already has **more than one user** with your email (common after trying email/password and GitHub separately, or repeated OAuth attempts).
+
+### Fix (Supabase Dashboard)
+
+1. **Authentication → Users**
+2. Search for your email — you will see **two (or more) users** with the same address.
+3. **Delete** the extra account(s). Keep the one you want to use going forward (or delete all and sign in fresh with GitHub only).
+4. On `/login`, click **Continue with GitHub** again.
+
+### Prevent it
+
+- Pick **one** sign-in method per email (GitHub **or** email/password), not both during testing.
+- After wiping app data, also clear duplicate users in Supabase if you re-register with the same email.
+
+This is a Supabase Auth data issue; URL Configuration (Site URL / Redirect URLs) does not fix it.
+
+## Different users / different GitHub accounts
+
+Blueprint already creates **one Supabase user per GitHub account**. Projects and data are scoped to that user’s `user_id`.
+
+If **Continue with GitHub** always signs you in as the same person (e.g. `prithvisaran.s@gmail.com`) without asking:
+
+1. **GitHub is reusing your browser session** — you stay logged into github.com as one user, so OAuth completes instantly.
+2. The app sends `prompt=select_account` so GitHub should show an **account picker**. Pick another account or “Sign in with a different account”.
+3. To test as another person: **Sign out** from Blueprint (top bar), then GitHub login again, or use an **incognito/private** window with a different GitHub login.
+4. Do not use **demo/mock mode** (`VITE_USE_MOCKS=true`) for real multi-user tests — that always uses a fake demo user.
+
+**Sign out** (Blueprint top bar) only clears this app’s session. Switching GitHub users still requires choosing a different account on GitHub’s screen (or signing out of github.com).
