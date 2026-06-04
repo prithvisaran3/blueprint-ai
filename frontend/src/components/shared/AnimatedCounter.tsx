@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { useInView } from 'framer-motion'
 
 interface AnimatedCounterProps {
   value: number
@@ -25,10 +24,14 @@ function formatValue(
 }
 
 function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3)
+  return 1 - (1 - t) ** 3
 }
 
-/** Counts up to `value` when scrolled into view (rAF — avoids framer-motion `animate` in prod bundles). */
+/**
+ * Counts up to `value` when scrolled into view.
+ * Uses native IntersectionObserver + rAF — no framer-motion dependency
+ * so the production bundle never encounters a minification edge-case.
+ */
 export function AnimatedCounter({
   value,
   decimals = 0,
@@ -38,10 +41,30 @@ export function AnimatedCounter({
   separator = true,
 }: AnimatedCounterProps) {
   const ref = useRef<HTMLSpanElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-40px' })
+  const [inView, setInView] = useState(false)
   const [text, setText] = useState(() =>
     formatValue(0, decimals, prefix, suffix, separator),
   )
+
+  // Native IntersectionObserver — no framer-motion, no minification surprises.
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setInView(true) // fallback: just count up immediately
+      return
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '-40px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!inView) return
@@ -50,8 +73,7 @@ export function AnimatedCounter({
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs)
-      const current = value * easeOutCubic(t)
-      setText(formatValue(current, decimals, prefix, suffix, separator))
+      setText(formatValue(value * easeOutCubic(t), decimals, prefix, suffix, separator))
       if (t < 1) frame = requestAnimationFrame(tick)
     }
 

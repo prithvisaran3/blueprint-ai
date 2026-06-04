@@ -145,7 +145,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     return {
       date: label,
       generations: sameDay.length,
-      tokens: sameDay.reduce((sum, r) => sum + r.total_tokens, 0),
+      tokens: sameDay.reduce((sum, r) => sum + (r.total_tokens ?? 0), 0),
     }
   })
 

@@ -15,4 +15,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    // Hidden source maps: not served publicly but available to browser DevTools
+    // so the next time an error occurs we can read the original file + line.
+    sourcemap: 'hidden',
+  },
 })
