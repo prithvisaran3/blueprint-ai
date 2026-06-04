@@ -3,6 +3,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from './layouts/AppShell'
 import { ProtectedRoute } from './ProtectedRoute'
+import { RedirectIfAuthenticated } from './RedirectIfAuthenticated'
 import { LandingPage } from '@/features/landing/LandingPage'
 import { AuthCallbackPage } from '@/features/auth/AuthCallbackPage'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -39,7 +40,14 @@ function Lazy({ children }: { children: ReactNode }) {
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
-  { path: '/login', element: <LoginPage /> },
+  {
+    path: '/login',
+    element: (
+      <RedirectIfAuthenticated>
+        <LoginPage />
+      </RedirectIfAuthenticated>
+    ),
+  },
   { path: '/auth/callback', element: <AuthCallbackPage /> },
   {
     element: (

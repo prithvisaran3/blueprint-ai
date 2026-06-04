@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
+import type { AuthChangeEvent, User as SupabaseUser } from '@supabase/supabase-js'
 import type { User } from '@/types'
 import { mockUser } from '@/lib/mock/data'
 import { supabase } from '@/lib/supabase'
@@ -44,31 +44,51 @@ function mapUser(u: SupabaseUser): User {
   }
 }
 
+/** Events that change who is signed in (or finish the initial cookie restore). */
+const SESSION_EVENTS = new Set<AuthChangeEvent>([
+  'INITIAL_SESSION',
+  'SIGNED_IN',
+  'SIGNED_OUT',
+  'TOKEN_REFRESHED',
+  'USER_UPDATED',
+])
+
 /**
- * Auth provider. Uses **Supabase Auth** when a project is configured; otherwise
- * falls back to a local stub session (mock mode) so the app still runs.
+ * Auth provider. Uses **Supabase Auth** with cookie persistence when configured;
+ * otherwise falls back to a local stub session (mock mode).
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() =>
-    useStub && window.localStorage.getItem(STORAGE_KEY) === 'true' ? mockUser : null,
-  )
+  const [user, setUser] = useState<User | null>(() => {
+    if (useStub && typeof window !== 'undefined' && window.localStorage.getItem(STORAGE_KEY) === 'true') {
+      return mockUser
+    }
+    return null
+  })
   const [isLoading, setIsLoading] = useState(!useStub)
 
   useEffect(() => {
     if (useStub || !supabase) return
+
     let active = true
-    supabase.auth.getSession().then(({ data }) => {
+
+    // Restore session from cookies on every visit (before rendering protected routes).
+    void supabase.auth.getSession().then(({ data: { session } }) => {
       if (!active) return
-      setUser(data.session ? mapUser(data.session.user) : null)
-      setIsLoading(false)
-    })
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session ? mapUser(session.user) : null)
       setIsLoading(false)
     })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active || !SESSION_EVENTS.has(event)) return
+      setUser(session ? mapUser(session.user) : null)
+      setIsLoading(false)
+    })
+
     return () => {
       active = false
-      sub.subscription.unsubscribe()
+      subscription.unsubscribe()
     }
   }, [])
 
@@ -109,7 +129,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [login])
 
   const logout = useCallback(async () => {
-    if (!useStub && supabase) await supabase.auth.signOut()
+    if (!useStub && supabase) {
+      await supabase.auth.signOut({ scope: 'local' })
+    }
     window.localStorage.removeItem(STORAGE_KEY)
     setUser(null)
   }, [])
