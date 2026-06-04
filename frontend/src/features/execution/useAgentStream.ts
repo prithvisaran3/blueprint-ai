@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { StreamEvent, StreamEventType } from '@/types'
 import { useExecutionStore } from '@/stores/executionStore'
 import { SSE_BASE_URL, USE_MOCKS } from '@/lib/env'
+import { debugError, debugLog, debugWarn } from '@/lib/debug'
 import { getAccessToken } from '@/lib/supabase'
 
 const SSE_EVENT_TYPES: StreamEventType[] = [
@@ -39,7 +40,7 @@ function toStreamEvent(type: string, raw: unknown): StreamEvent {
 export function useAgentStream(runId: string, autostart = true) {
   const store = useExecutionStore()
   const { start, startStream, applyEvent, reset, status, runId: activeRunId } = store
-  const connectedRef = useRef<string | null>(null)
+  const streamGenRef = useRef(0)
 
   // --- Mock mode: scripted timeline ----------------------------------------
   useEffect(() => {
@@ -51,37 +52,59 @@ export function useAgentStream(runId: string, autostart = true) {
   // --- Real mode: live SSE EventSource -------------------------------------
   useEffect(() => {
     if (USE_MOCKS || !runId || !autostart) return
-    if (connectedRef.current === runId) return
-    connectedRef.current = runId
 
+    const generation = ++streamGenRef.current
     let es: EventSource | null = null
     let cancelled = false
 
+    // Start immediately — don't wait for the async token fetch. React StrictMode
+    // remounts effects in dev; a ref guard that skipped the second mount left
+    // runs stuck at "Queued" forever.
+    startStream(runId)
+    debugLog('stream', `Opening SSE for run ${runId}`)
+
     ;(async () => {
       const token = await getAccessToken()
-      if (cancelled) return
-      startStream(runId)
+      if (cancelled || generation !== streamGenRef.current) return
+
+      if (!token) {
+        debugWarn('stream', 'No Supabase session token — SSE may be rejected with 401')
+      }
+
       const params = token ? `?access_token=${encodeURIComponent(token)}` : ''
-      es = new EventSource(`${SSE_BASE_URL}/executions/${runId}/stream${params}`)
+      const url = `${SSE_BASE_URL}/executions/${runId}/stream${params}`
+      debugLog('stream', `Connecting EventSource`, { url: url.replace(/access_token=[^&]+/, 'access_token=***') })
+
+      es = new EventSource(url)
 
       for (const type of SSE_EVENT_TYPES) {
         es.addEventListener(type, (ev) => {
           try {
             const parsed = JSON.parse((ev as MessageEvent).data)
             const event = toStreamEvent(type, parsed)
+            debugLog('stream', `← ${type}`, event.agent)
             applyEvent(event)
             if (type === 'run_completed') es?.close()
-          } catch {
-            /* ignore malformed event */
+          } catch (err) {
+            debugError('stream', 'Malformed SSE event', err)
           }
         })
       }
 
+      es.onopen = () => debugLog('stream', 'SSE connection open')
+
       es.onerror = () => {
-        // The stream closes naturally after run_completed; only surface real errors.
-        if (useExecutionStore.getState().status !== 'completed') {
-          applyEvent(toStreamEvent('error', { payload: { message: 'Connection lost' } }))
-        }
+        const state = useExecutionStore.getState()
+        if (state.status === 'completed') return
+        debugError('stream', 'SSE connection error — check Network tab for /stream status')
+        applyEvent(
+          toStreamEvent('error', {
+            payload: {
+              message:
+                'Lost connection to the agent stream. If you are not signed in, log in and refresh. On the free Render tier the backend may still be waking up — wait ~60s and reload.',
+            },
+          }),
+        )
         es?.close()
       }
     })()

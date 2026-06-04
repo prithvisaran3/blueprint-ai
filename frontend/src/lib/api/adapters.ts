@@ -304,7 +304,7 @@ function adaptCode(agent: AgentKey, o: Dict | null): CodeAgentOutput {
     path: str(a.path, 'file'),
     language: str(a.language, agent === 'frontend' ? 'tsx' : 'python'),
     description: str(a.description),
-    code: str(a.snippet, '// (no snippet provided)'),
+    code: str(a.snippet) || str(a.code, '// (no snippet provided)'),
   }))
   return { summary: str(o.summary), artifacts, contentMd: codeMd(agent, o) }
 }

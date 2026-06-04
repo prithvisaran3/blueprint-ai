@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 
-def summarize(label: str, output: dict[str, Any] | None, *, limit: int = 1800) -> str:
+def summarize(label: str, output: dict[str, Any] | None, *, limit: int = 2800) -> str:
     """Render a prior agent's output as compact JSON for prompt context."""
     if not output:
         return f"{label}: (not available)"

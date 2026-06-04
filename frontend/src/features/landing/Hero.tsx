@@ -10,9 +10,11 @@ const PHRASES = ['production architectures', 'delivery plans', 'backend & fronte
 interface HeroProps {
   onGenerate: (idea: string) => void
   submitting?: boolean
+  /** Shown under the button while a slow backend request is in flight. */
+  statusHint?: string
 }
 
-export function Hero({ onGenerate, submitting }: HeroProps) {
+export function Hero({ onGenerate, submitting, statusHint }: HeroProps) {
   const typed = useTypingEffect(PHRASES)
 
   return (
@@ -57,8 +59,11 @@ export function Hero({ onGenerate, submitting }: HeroProps) {
           engineering blueprint.
         </motion.p>
 
-        <motion.div variants={fadeInUp} className="mt-10 flex w-full justify-center">
+        <motion.div variants={fadeInUp} className="mt-10 flex w-full flex-col items-center">
           <PromptInput onGenerate={onGenerate} submitting={submitting} />
+          {statusHint && (
+            <p className="mt-3 max-w-md text-center text-xs text-muted-foreground">{statusHint}</p>
+          )}
         </motion.div>
       </motion.div>
 

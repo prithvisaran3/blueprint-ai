@@ -153,6 +153,11 @@ export function LoginPage() {
           <Button variant="outline" size="lg" className="w-full" onClick={handleGitHub} type="button">
             <GitBranch className="size-4" /> Continue with GitHub
           </Button>
+          {!isMock && (
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">
+              GitHub 404 after sign-in? Fix the OAuth Client ID in Supabase (see docs/AUTH_GITHUB.md).
+            </p>
+          )}
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
             {mode === 'signup' ? 'Already have an account?' : 'New here?'}{' '}

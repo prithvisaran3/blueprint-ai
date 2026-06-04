@@ -17,9 +17,10 @@ dependencies = [
     "httpx>=0.27.0",
     "sse-starlette>=2.1.0",
     "python-multipart>=0.0.12",
-    # --- AI: Google Gemini via LangGraph + LangChain (free tier, no paid deps) ---
+    # --- AI: LangGraph + LangChain (OpenRouter free tier + optional Gemini direct) ---
     "langgraph>=0.2.50",
     "langchain-core>=0.3.0",
+    "langchain-openai>=0.2.0",
     "langchain-google-genai>=2.0.0",
 ]
 

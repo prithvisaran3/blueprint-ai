@@ -48,20 +48,64 @@ class Settings(BaseSettings):
     # When true, requests resolve to a fake dev user (local dev only).
     auth_dev_bypass: bool = Field(default=False)
 
-    # --- AI (Gemini via LangGraph + LangChain) ------------------------------
-    # When ``gemini_api_key`` is empty the pipeline transparently falls back to
-    # the deterministic stub so the app still runs end-to-end without a key.
+    # --- AI (LangGraph + LangChain) ------------------------------------------
+    # Provider: ``auto`` (OpenRouter if key set, else Gemini), ``openrouter``,
+    # or ``gemini``. When no key is configured the pipeline uses stub output.
+    llm_provider: str = Field(default="auto")
+    llm_temperature: float = Field(default=0.4)
+    llm_request_timeout: float = Field(default=45.0)
+    # Skip all LLM API calls and use deterministic stubs (~15s full pipeline).
+    llm_stub_mode: bool = Field(default=False)
+
+    # OpenRouter — free-tier models via https://openrouter.ai (OpenAI-compatible).
+    openrouter_api_key: str = Field(default="")
+    # Primary model — Mistral 7B Instruct (free, 32k context).
+    openrouter_model: str = Field(default="mistralai/mistral-7b-instruct:free")
+    # Fallback when primary has no OpenRouter endpoints (404) or rate-limits.
+    openrouter_model_fast: str = Field(default="openai/gpt-oss-20b:free")
+    openrouter_base_url: str = Field(default="https://openrouter.ai/api/v1")
+    openrouter_app_url: str = Field(default="https://blueprint-ai-rust.vercel.app")
+
+    # Google Gemini direct (Google AI Studio).
     gemini_api_key: str = Field(default="")
     gemini_model: str = Field(default="gemini-2.5-flash")
+    # Back-compat aliases for older .env files.
     gemini_temperature: float = Field(default=0.4)
-    # Max seconds to wait on a single Gemini structured-output call before a node
-    # is treated as failed (keeps a wedged run from hanging the SSE stream).
     gemini_request_timeout: float = Field(default=90.0)
 
     @property
+    def resolved_llm_provider(self) -> str:
+        """``openrouter`` | ``gemini`` | ``stub``."""
+        pref = self.llm_provider.strip().lower()
+        has_or = bool(self.openrouter_api_key.strip())
+        has_gemini = bool(self.gemini_api_key.strip())
+        if pref == "openrouter" and has_or:
+            return "openrouter"
+        if pref == "gemini" and has_gemini:
+            return "gemini"
+        if pref in {"", "auto"}:
+            if has_or:
+                return "openrouter"
+            if has_gemini:
+                return "gemini"
+        return "stub"
+
+    @property
     def ai_enabled(self) -> bool:
-        """True when a Gemini key is configured (otherwise the stub is used)."""
-        return bool(self.gemini_api_key.strip())
+        """True when an LLM provider is configured (otherwise the stub is used)."""
+        return not self.llm_stub_mode and self.resolved_llm_provider != "stub"
+
+    @property
+    def effective_temperature(self) -> float:
+        return self.llm_temperature if self.llm_temperature != 0.4 else self.gemini_temperature
+
+    @property
+    def effective_request_timeout(self) -> float:
+        return (
+            self.llm_request_timeout
+            if self.llm_request_timeout != 90.0
+            else self.gemini_request_timeout
+        )
 
     # --- CORS ----------------------------------------------------------------
     cors_origins: list[str] = Field(

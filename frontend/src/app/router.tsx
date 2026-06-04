@@ -4,6 +4,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from './layouts/AppShell'
 import { ProtectedRoute } from './ProtectedRoute'
 import { LandingPage } from '@/features/landing/LandingPage'
+import { AuthCallbackPage } from '@/features/auth/AuthCallbackPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RouteErrorPage } from '@/app/RouteErrorPage'
 
@@ -13,6 +14,9 @@ const DashboardPage = lazy(() =>
 )
 const ProjectDetailPage = lazy(() =>
   import('@/features/projects/ProjectDetailPage').then((m) => ({ default: m.ProjectDetailPage })),
+)
+const ProjectsPage = lazy(() =>
+  import('@/features/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })),
 )
 const ExecutionPage = lazy(() =>
   import('@/features/execution/ExecutionPage').then((m) => ({ default: m.ExecutionPage })),
@@ -36,6 +40,7 @@ function Lazy({ children }: { children: ReactNode }) {
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
+  { path: '/auth/callback', element: <AuthCallbackPage /> },
   {
     element: (
       <ProtectedRoute>
@@ -45,6 +50,7 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorPage />,
     children: [
       { path: '/dashboard', element: <Lazy><DashboardPage /></Lazy> },
+      { path: '/projects', element: <Lazy><ProjectsPage /></Lazy> },
       { path: '/projects/:id', element: <Lazy><ProjectDetailPage /></Lazy> },
       { path: '/executions/:runId', element: <Lazy><ExecutionPage /></Lazy> },
       { path: '/workspace/:runId', element: <Lazy><WorkspacePage /></Lazy> },

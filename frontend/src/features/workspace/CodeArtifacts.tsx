@@ -38,7 +38,24 @@ export function CodeArtifacts({ artifacts }: { artifacts: CodeArtifact[] }) {
   const [active, setActive] = useState(0)
   const [copied, setCopied] = useState(false)
   const { theme } = useTheme()
-  const current = artifacts[active]
+
+  if (!artifacts.length) {
+    return (
+      <GlassCard className="py-10 text-center text-sm text-muted-foreground">
+        No code artifacts were generated for this agent yet.
+      </GlassCard>
+    )
+  }
+
+  const safeActive = Math.min(active, artifacts.length - 1)
+  const current = artifacts[safeActive]
+  if (!current?.code) {
+    return (
+      <GlassCard className="py-10 text-center text-sm text-muted-foreground">
+        Code artifact data is missing or incomplete.
+      </GlassCard>
+    )
+  }
 
   async function copy() {
     await navigator.clipboard.writeText(current.code)
@@ -54,11 +71,11 @@ export function CodeArtifacts({ artifacts }: { artifacts: CodeArtifact[] }) {
       <div className="flex items-center gap-1 overflow-x-auto border-b border-border px-2 py-2">
         {artifacts.map((a, i) => (
           <button
-            key={a.path}
+            key={a.path || i}
             onClick={() => setActive(i)}
             className={cn(
               'flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
-              i === active ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
+              i === safeActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             <FileCode2 className="size-3.5" />

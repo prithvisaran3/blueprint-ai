@@ -2,17 +2,24 @@ import { NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { LayoutDashboard, FolderKanban, Activity, Sparkles, Settings } from 'lucide-react'
 import { Logo } from '@/components/shared'
+import { useProjects, useRuns } from '@/hooks/queries'
 import { cn } from '@/lib/utils'
-import { PRIMARY_PROJECT_ID, PRIMARY_RUN_ID } from '@/lib/mock/data'
-
-const NAV = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: `/projects/${PRIMARY_PROJECT_ID}`, label: 'Projects', icon: FolderKanban },
-  { to: `/executions/${PRIMARY_RUN_ID}`, label: 'Executions', icon: Activity },
-  { to: `/workspace/${PRIMARY_RUN_ID}`, label: 'Workspace', icon: Sparkles },
-]
 
 export function Sidebar() {
+  const { data: projects } = useProjects()
+  const { data: runs } = useRuns()
+
+  const latestRunId = runs?.[0]?.id
+  const executionsTo = latestRunId ? `/executions/${latestRunId}` : '/dashboard'
+  const workspaceTo = latestRunId ? `/workspace/${latestRunId}` : '/dashboard'
+
+  const NAV = [
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/projects', label: 'Projects', icon: FolderKanban },
+    { to: executionsTo, label: 'Executions', icon: Activity },
+    { to: workspaceTo, label: 'Workspace', icon: Sparkles },
+  ]
+
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/30 backdrop-blur-xl lg:flex">
       <div className="flex h-16 items-center px-5">
@@ -63,10 +70,14 @@ export function Sidebar() {
         <div className="mt-3 rounded-xl bg-gradient-to-br from-primary/15 to-fuchsia-500/10 p-3 ring-1 ring-inset ring-primary/15">
           <p className="text-xs font-medium text-foreground">Free tier</p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            42 of 100 generations used this month.
+            {projects?.length ?? 0} project{(projects?.length ?? 0) === 1 ? '' : 's'} · {runs?.length ?? 0} run
+            {(runs?.length ?? 0) === 1 ? '' : 's'}
           </p>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-[42%] rounded-full bg-primary" />
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${Math.min(100, ((runs?.length ?? 0) / 100) * 100) || 0}%` }}
+            />
           </div>
         </div>
       </div>

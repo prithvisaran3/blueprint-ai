@@ -116,10 +116,10 @@ export function WorkspacePage() {
           <PlanningTab data={byAgent.planner.output as PlannerOutput} />
         </TabsContent>
         <TabsContent value="backend">
-          <CodeTab data={byAgent.backend.output as CodeAgentOutput} />
+          <CodeTab data={byAgent.backend?.output as CodeAgentOutput | undefined} />
         </TabsContent>
         <TabsContent value="frontend">
-          <CodeTab data={byAgent.frontend.output as CodeAgentOutput} />
+          <CodeTab data={byAgent.frontend?.output as CodeAgentOutput | undefined} />
         </TabsContent>
         <TabsContent value="qa">
           <QaTab data={byAgent.qa.output as QaOutput} />

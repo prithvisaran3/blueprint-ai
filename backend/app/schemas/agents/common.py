@@ -10,9 +10,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class AgentSchema(BaseModel):
-    """Base for agent structured outputs (forbids unexpected keys)."""
+    """Base for agent structured outputs.
 
-    model_config = ConfigDict(extra="forbid")
+    Uses ``extra="ignore"`` so a slightly off-spec key from a free-tier LLM
+    (e.g. ``as_`` instead of ``as_a``) drops that one field instead of failing
+    the entire structured-output parse and forcing a stub fallback.
+    """
+
+    model_config = ConfigDict(extra="ignore")
 
 
 class HealthScoreDimension(AgentSchema):

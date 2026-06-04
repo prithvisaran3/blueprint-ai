@@ -36,7 +36,18 @@ services:
       # Comma-separated allowed frontend origins (set to your Vercel URL).
       - key: CORS_ORIGINS
         sync: false
-      # Google Gemini key (optional — stub fallback runs without it).
+      # LLM provider (OpenRouter recommended for free tier).
+      - key: LLM_PROVIDER
+        value: openrouter
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: mistralai/mistral-7b-instruct:free
+      - key: OPENROUTER_MODEL_FAST
+        value: openai/gpt-oss-20b:free
+      - key: OPENROUTER_APP_URL
+        sync: false
+      # Optional Gemini direct fallback.
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL

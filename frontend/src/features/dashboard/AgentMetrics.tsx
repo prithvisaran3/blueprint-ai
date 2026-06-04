@@ -5,7 +5,7 @@ import { formatDuration, formatTokens } from '@/lib/utils'
 import type { AgentMetric } from '@/types'
 
 export function AgentMetrics({ metrics }: { metrics: AgentMetric[] }) {
-  const maxTokens = Math.max(...metrics.map((m) => m.avgTokens))
+  const maxTokens = Math.max(1, ...metrics.map((m) => m.avgTokens))
 
   return (
     <GlassCard>

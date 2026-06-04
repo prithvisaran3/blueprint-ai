@@ -20,7 +20,8 @@ def build(state: dict[str, Any]) -> str:
         f"Product idea:\n{state.get('idea', '')}\n\n"
         f"{summarize('Backend design', state.get('backend'))}\n\n"
         f"{summarize('Frontend design', state.get('frontend'))}\n\n"
-        "Produce the QA strategy with 4-8 test cases and the main risks. "
-        "Express coverage_targets as a map like "
-        '{"unit": 80, "integration": 60, "e2e": 40}.'
+        "Produce the QA strategy with 6-10 concrete test cases across unit, "
+        "integration, and e2e, plus 3-5 key risks. Target the product's "
+        "highest-risk and signature flows specifically. Express coverage_targets "
+        'as a map like {"unit": 80, "integration": 60, "e2e": 40}.'
     )

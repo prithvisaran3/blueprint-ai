@@ -20,7 +20,7 @@ export function DashboardPage() {
   const isLoading = stats.isLoading || projects.isLoading || runs.isLoading
   const error = stats.error ?? projects.error ?? runs.error
 
-  if (isLoading || !stats.data) {
+  if (isLoading) {
     return <DashboardSkeleton />
   }
 
@@ -44,6 +44,10 @@ export function DashboardPage() {
         </button>
       </div>
     )
+  }
+
+  if (!stats.data) {
+    return <DashboardSkeleton />
   }
 
   const firstName = user?.displayName?.split(' ')[0] ?? 'there'

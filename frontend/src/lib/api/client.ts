@@ -4,6 +4,7 @@
  * errors into a consistent `ApiError`.
  */
 import { API_BASE_URL } from '@/lib/env'
+import { debugLog, debugWarn } from '@/lib/debug'
 import { getAccessToken } from '@/lib/supabase'
 
 export class ApiError extends Error {
@@ -41,11 +42,15 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   const token = await getAccessToken()
   if (token) headers.Authorization = `Bearer ${token}`
+  else debugWarn('api', `No auth token for ${method} ${path} — request may return 401`)
   if (body !== undefined) headers['Content-Type'] = 'application/json'
+
+  const url = buildUrl(path, params)
+  debugLog('api', `${method} ${url}`, body ?? undefined)
 
   let response: Response
   try {
-    response = await fetch(buildUrl(path, params), {
+    response = await fetch(url, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -63,13 +68,16 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   if (!response.ok) {
     const errObj = (data as { error?: { message?: string; code?: string } } | null)?.error
-    throw new ApiError(
+    const apiError = new ApiError(
       errObj?.message ?? response.statusText ?? 'Request failed',
       response.status,
       errObj?.code ?? 'error',
     )
+    debugWarn('api', `${method} ${path} → ${response.status}`, apiError.message)
+    throw apiError
   }
 
+  debugLog('api', `${method} ${path} → ${response.status}`)
   return data as T
 }
 

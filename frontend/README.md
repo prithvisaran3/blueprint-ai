@@ -26,6 +26,44 @@ npm run lint           # run ESLint
 
 Copy `.env.example` to `.env.local` to configure integration variables (not required for Phase 2).
 
+## Debugging (Flutter-style)
+
+This stack splits debugging across **browser** (frontend) and **terminal** (backend).
+
+| Flutter | Blueprint AI |
+| ------- | -------------- |
+| `debugPrint()` | `debugLog('scope', 'message', data)` in `src/lib/debug.ts`, or plain `console.log` |
+| Debug console in IDE | **Browser DevTools → Console** (F12 or Cmd+Option+I) |
+| Run & Debug | Cursor **Run and Debug** panel → **Full Stack Debug** (`.vscode/launch.json`) |
+| Breakpoints in Dart | Set breakpoints in `.tsx` files, launch **Frontend: Chrome** |
+| `flutter run` logs | Backend: uvicorn terminal output; Frontend: Vite terminal + browser console |
+
+### Quick local debug loop
+
+```bash
+# Terminal 1 — backend (prints every request + SQL when DB_ECHO=true)
+cd backend && source .venv/bin/activate
+AUTH_DEV_BYPASS=true LOG_LEVEL=DEBUG uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 — frontend (hot reload)
+cd frontend && npm run dev
+```
+
+Open http://localhost:5173, press **F12 → Console**, then click **Generate Blueprint**.
+You should see lines like `[Blueprint:api] POST http://localhost:8000/api/v1/generate`.
+
+`frontend/.env.local` overrides production URLs so local dev hits `localhost:8000`.
+
+Optional: set `VITE_DEBUG=true` in `.env.local` to keep `[Blueprint:*]` logs in production builds.
+
+### Cursor Run and Debug
+
+1. Open **Run and Debug** (Cmd+Shift+D).
+2. Choose **Full Stack Debug** — starts Vite, FastAPI with breakpoints, and Chrome.
+3. For backend-only breakpoints: choose **Backend: FastAPI** (requires Python **debugpy** extension).
+
+Equivalent script: `./scripts/dev-debug.sh both` from the repo root.
+
 ## Routes
 
 | Path                 | Screen                                                        |

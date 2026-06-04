@@ -1,7 +1,17 @@
+import { useEffect } from 'react'
 import { useRouteError, isRouteErrorResponse, Link } from 'react-router-dom'
+import { debugError } from '@/lib/debug'
 
 export function RouteErrorPage() {
   const error = useRouteError()
+
+  useEffect(() => {
+    debugError('router', 'Route error boundary caught', error)
+    if (error instanceof Error && error.stack) {
+      console.error(error.stack)
+    }
+  }, [error])
+
   const message = isRouteErrorResponse(error)
     ? error.statusText || error.data?.message
     : error instanceof Error

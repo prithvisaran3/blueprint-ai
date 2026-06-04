@@ -18,12 +18,13 @@ export function ExecutionPage() {
   const { runId = '' } = useParams()
   const navigate = useNavigate()
   const { data: run } = useRun(runId)
-  const { status, agents, elapsedMs, selectedAgent, togglePause, start } = useAgentStream(runId)
+  const { status, agents, elapsedMs, selectedAgent, togglePause, start, logs } = useAgentStream(runId)
 
   const completed = AGENT_ORDER.filter((a) => agents[a].status === 'completed').length
   const totalTokens = AGENT_ORDER.reduce((sum, a) => sum + agents[a].tokens, 0)
   const activeAgentKey = AGENT_ORDER.find((a) => agents[a].status === 'running') ?? null
   const overallProgress = Math.round((completed / AGENT_ORDER.length) * 100)
+  const streamError = logs.find((l) => l.level === 'error')?.message
 
   // Reset selection-derived detail when nothing is selected yet.
   const detailKey = selectedAgent ?? activeAgentKey ?? 'architect'
@@ -72,6 +73,12 @@ export function ExecutionPage() {
           </Button>
         </div>
       </motion.div>
+
+      {streamError && (
+        <motion.div variants={fadeInUp} className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {streamError}
+        </motion.div>
+      )}
 
       {/* Stats */}
       <motion.div variants={fadeInUp} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
