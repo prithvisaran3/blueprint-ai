@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { debugError, debugLog } from '@/lib/debug'
 
@@ -14,14 +15,15 @@ export function AuthCallbackPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!supabase) {
+    const client = supabase
+    if (!client) {
       setError('Supabase is not configured.')
       return
     }
 
     let cancelled = false
 
-    async function finish() {
+    async function finish(client: SupabaseClient) {
       const params = new URLSearchParams(window.location.search)
       const oauthError = params.get('error_description') ?? params.get('error')
       if (oauthError) {
@@ -32,11 +34,11 @@ export function AuthCallbackPage() {
       try {
         const code = params.get('code')
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          const { error: exchangeError } = await client.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
         }
 
-        const { data, error: err } = await supabase.auth.getSession()
+        const { data, error: err } = await client.auth.getSession()
         if (err) throw err
         if (!data.session) {
           throw new Error('No session after sign-in. Check Supabase redirect URLs and GitHub OAuth settings.')
@@ -52,7 +54,7 @@ export function AuthCallbackPage() {
       }
     }
 
-    void finish()
+    void finish(client)
     return () => {
       cancelled = true
     }
