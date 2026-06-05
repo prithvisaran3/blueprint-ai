@@ -119,9 +119,22 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_cors_origins(cls, value: object) -> object:
-        """Allow CORS origins to be provided as a comma-separated string."""
+        """Allow CORS origins to be provided as a comma-separated string.
+
+        Always merges in the baseline set of allowed origins so that setting
+        the CORS_ORIGINS env var on a hosting platform (e.g. Render) cannot
+        accidentally remove the production frontend URL.
+        """
+        baseline = {
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "https://blueprint-ai-rust.vercel.app",
+        }
         if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
+            parsed = {origin.strip() for origin in value.split(",") if origin.strip()}
+            return sorted(baseline | parsed)
+        if isinstance(value, list):
+            return sorted(baseline | set(value))
         return value
 
     @property
