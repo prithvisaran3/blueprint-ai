@@ -1,0 +1,25 @@
+name: Keep Render Backend Alive
+
+on:
+  schedule:
+    # Ping every 10 minutes — keeps the Render free-tier service warm so users
+    # never hit the cold-start window where CORS headers are missing.
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  ping:
+    name: Ping backend health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake backend
+        run: |
+          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            "https://blueprint-ai-backend-xo38.onrender.com/")
+          echo "Backend health status: $STATUS"
+          if [ "$STATUS" = "000" ]; then
+            echo "Backend did not respond within 30s (may still be waking)"
+            exit 0
+          fi
+          echo "Backend is up (status $STATUS)"
