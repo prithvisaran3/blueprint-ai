@@ -2,9 +2,9 @@ name: Keep Render Backend Alive
 
 on:
   schedule:
-    # Ping every 10 minutes — keeps the Render free-tier service warm so users
+    # Ping every 5 minutes — keeps the Render free-tier service warm so users
     # never hit the cold-start window where CORS headers are missing.
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch: # allow manual trigger
 
 jobs:

@@ -25,16 +25,36 @@ export function DashboardPage() {
   const isLoading = stats.isLoading || projects.isLoading || runs.isLoading
   const error = stats.error ?? projects.error ?? runs.error
 
-  if (isLoading) {
-    return <DashboardSkeleton />
+  // While any query is actively retrying after a failure, show a skeleton with a banner
+  // rather than an error page — this covers Render free-tier cold-start (~60s wake-up).
+  const isRetrying =
+    (stats.isError && stats.fetchStatus === 'fetching') ||
+    (projects.isError && projects.fetchStatus === 'fetching') ||
+    (runs.isError && runs.fetchStatus === 'fetching')
+
+  if (isLoading || isRetrying) {
+    return (
+      <>
+        {isRetrying && (
+          <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
+            Backend is warming up — this can take ~60 s on the free tier. Retrying automatically&hellip;
+          </div>
+        )}
+        <DashboardSkeleton />
+      </>
+    )
   }
 
   if (error) {
+    const isNetworkError =
+      error instanceof Error && 'code' in error && (error as { code: string }).code === 'network_error'
     return (
       <div className="glass rounded-xl border border-destructive/30 p-6 text-sm">
         <p className="font-medium text-destructive">Could not load dashboard</p>
         <p className="mt-2 text-muted-foreground">
-          {error instanceof Error ? error.message : 'Something went wrong fetching your data.'}
+          {isNetworkError
+            ? 'The backend did not respond. If this is your first visit today, the free server may need ~60 s to wake up.'
+            : (error instanceof Error ? error.message : 'Something went wrong fetching your data.')}
         </p>
         <button
           type="button"
