@@ -11,6 +11,31 @@ import { useAuth } from '@/app/providers'
 import { fadeInUp, staggerContainer } from '@/lib/motion'
 import { AuthDebugPanel } from './AuthDebugPanel'
 
+/** Map raw Supabase/auth errors to clear, actionable messages. */
+function friendlyAuthError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : 'Authentication failed'
+  const msg = raw.toLowerCase()
+  if (msg.includes('email not confirmed')) {
+    return 'Please confirm your email first — check your inbox for the confirmation link.'
+  }
+  if (msg.includes('invalid login credentials')) {
+    return 'Incorrect email or password. If you just signed up, confirm your email first.'
+  }
+  if (msg.includes('user already registered') || msg.includes('already registered')) {
+    return 'An account with this email already exists. Try signing in instead.'
+  }
+  if (msg.includes('rate limit')) {
+    return 'Too many attempts — please wait a minute and try again.'
+  }
+  if (msg.includes('password') && msg.includes('6')) {
+    return 'Password must be at least 6 characters.'
+  }
+  if (msg.includes('email address') && msg.includes('invalid')) {
+    return 'That email address looks invalid. Please use a real email.'
+  }
+  return raw
+}
+
 export function LoginPage() {
   const { login, signUp, loginWithGitHub, isMock } = useAuth()
   const navigate = useNavigate()
@@ -20,6 +45,7 @@ export function LoginPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
 
   const from = (location.state as { from?: string } | null)?.from ?? '/dashboard'
 
@@ -27,15 +53,24 @@ export function LoginPage() {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
+    setInfo(null)
     try {
       if (mode === 'signup' && !isMock) {
-        await signUp(email, password)
+        const { needsEmailConfirmation } = await signUp(email, password)
+        if (needsEmailConfirmation) {
+          setInfo(
+            `We sent a confirmation link to ${email}. Click it, then sign in below.`,
+          )
+          setMode('signin')
+          setPassword('')
+          return
+        }
       } else {
         await login(email, password)
       }
       navigate(from, { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed')
+      setError(friendlyAuthError(err))
     } finally {
       setSubmitting(false)
     }
@@ -43,11 +78,12 @@ export function LoginPage() {
 
   async function handleGitHub() {
     setError(null)
+    setInfo(null)
     try {
       await loginWithGitHub()
       if (isMock) navigate(from, { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'GitHub sign-in failed')
+      setError(friendlyAuthError(err))
     }
   }
 
@@ -133,6 +169,11 @@ export function LoginPage() {
                 required={!isMock}
               />
             </div>
+            {info && (
+              <p className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400">
+                {info}
+              </p>
+            )}
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" size="lg" className="w-full" disabled={submitting}>
               {submitting ? (
@@ -170,6 +211,7 @@ export function LoginPage() {
               onClick={() => {
                 setMode((m) => (m === 'signup' ? 'signin' : 'signup'))
                 setError(null)
+                setInfo(null)
               }}
               className="inline-flex items-center gap-1 text-primary hover:underline"
             >

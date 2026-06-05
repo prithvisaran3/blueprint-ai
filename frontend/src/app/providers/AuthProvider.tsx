@@ -15,7 +15,12 @@ interface AuthContextValue {
   isMock: boolean
   /** Email/password sign-in. In mock mode the password is ignored. */
   login: (email?: string, password?: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  /**
+   * Email/password sign-up. Resolves with `needsEmailConfirmation: true` when
+   * Supabase created the user but did not return a session (email confirmation
+   * is enabled) — the caller should prompt the user to check their inbox.
+   */
+  signUp: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>
   loginWithGitHub: () => Promise<void>
   logout: () => Promise<void>
 }
@@ -108,10 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = useCallback(async (email: string, password: string) => {
     if (useStub || !supabase) {
       await login(email)
-      return
+      return { needsEmailConfirmation: false }
     }
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
+    // When email confirmation is enabled, Supabase returns a user but no session.
+    // The user must click the confirmation link before they can sign in.
+    return { needsEmailConfirmation: !data.session }
   }, [login])
 
   const loginWithGitHub = useCallback(async () => {
