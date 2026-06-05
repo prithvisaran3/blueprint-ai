@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { debugError, debugLog } from '@/lib/debug'
 
@@ -13,6 +12,7 @@ import { debugError, debugLog } from '@/lib/debug'
 export function AuthCallbackPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  const navigatedRef = useRef(false)
 
   useEffect(() => {
     const client = supabase
@@ -23,53 +23,51 @@ export function AuthCallbackPage() {
 
     let cancelled = false
 
-    async function finish(sb: SupabaseClient) {
-      const params = new URLSearchParams(window.location.search)
-      const oauthError = params.get('error_description') ?? params.get('error')
-      if (oauthError) {
-        if (!cancelled) setError(oauthError)
-        return
-      }
+    const params = new URLSearchParams(window.location.search)
+    const oauthError = params.get('error_description') ?? params.get('error')
+    if (oauthError) {
+      setError(oauthError)
+      return
+    }
 
-      try {
-        const code = params.get('code')
-        if (code) {
-          const { error: exchangeError } = await sb.auth.exchangeCodeForSession(code)
-          if (exchangeError) throw exchangeError
-        }
-
-        // Hash-based implicit flow: detectSessionInUrl may need a tick to parse.
-        if (window.location.hash.includes('access_token')) {
-          await new Promise((r) => setTimeout(r, 100))
-        }
-
-        const { data, error: err } = await sb.auth.getSession()
-        if (err) throw err
-        if (!data.session) {
-          throw new Error(
-            'No session after sign-in. In Supabase → URL Configuration, set Site URL to your Vercel domain (not localhost:3000) and add /auth/callback to Redirect URLs.',
-          )
-        }
-
-        debugLog('auth', 'OAuth callback session established', { userId: data.session.user.id })
-        if (!cancelled) navigate('/dashboard', { replace: true })
-      } catch (e) {
-        debugError('auth', 'OAuth callback failed', e)
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Sign-in failed')
-        }
-      }
+    const goDashboard = () => {
+      if (cancelled || navigatedRef.current) return
+      navigatedRef.current = true
+      navigate('/dashboard', { replace: true })
     }
 
     const { data: listener } = client.auth.onAuthStateChange((event, session) => {
       if (cancelled) return
       if (event === 'SIGNED_IN' && session) {
         debugLog('auth', 'OAuth SIGNED_IN via listener', { userId: session.user.id })
-        navigate('/dashboard', { replace: true })
+        goDashboard()
       }
     })
 
-    void finish(client)
+    // Do NOT call exchangeCodeForSession manually — detectSessionInUrl handles
+    // PKCE when getSession() runs. A manual exchange races the SDK and can throw
+    // AuthPKCECodeVerifierMissingError if the verifier was already consumed.
+    void client.auth.getSession().then(({ data, error: sessionError }) => {
+      if (cancelled) return
+      if (sessionError) {
+        debugError('auth', 'OAuth callback failed', sessionError)
+        setError(sessionError.message)
+        return
+      }
+      if (data.session) {
+        debugLog('auth', 'OAuth callback session established', { userId: data.session.user.id })
+        goDashboard()
+        return
+      }
+      const hasAuthParams =
+        params.has('code') || window.location.hash.includes('access_token')
+      if (!hasAuthParams) {
+        setError(
+          'No session after sign-in. In Supabase → URL Configuration, set Site URL to your Vercel domain (not localhost:3000) and add /auth/callback to Redirect URLs.',
+        )
+      }
+      // If ?code= is present but session isn't ready yet, onAuthStateChange will fire.
+    })
 
     return () => {
       cancelled = true
@@ -79,11 +77,24 @@ export function AuthCallbackPage() {
 
   if (error) {
     const duplicateEmail = /multiple accounts with the same email/i.test(error)
+    const pkceMissing = /PKCE code verifier not found/i.test(error)
     return (
       <div className="grid min-h-screen place-items-center bg-background px-4">
         <div className="max-w-md space-y-4 text-center">
           <p className="text-sm text-destructive">{error}</p>
-          {duplicateEmail ? (
+          {pkceMissing ? (
+            <div className="space-y-2 text-left text-xs text-muted-foreground">
+              <p>
+                The sign-in flow lost its PKCE verifier (usually a stale tab, cleared storage, or
+                opening the GitHub link in a different browser).
+              </p>
+              <ol className="list-inside list-decimal space-y-1">
+                <li>Close other Blueprint tabs.</li>
+                <li>Go back to <strong>/login</strong> and click <strong>Continue with GitHub</strong> again.</li>
+                <li>Complete GitHub authorization in the <strong>same tab</strong> — do not copy the callback URL.</li>
+              </ol>
+            </div>
+          ) : duplicateEmail ? (
             <div className="space-y-2 text-left text-xs text-muted-foreground">
               <p>
                 Supabase found <strong>two user records</strong> with the same email (e.g. email

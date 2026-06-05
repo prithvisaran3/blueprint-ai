@@ -1,9 +1,14 @@
+import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { useDashboardStats, useProjects, useRuns } from '@/hooks/queries'
 import { useAuth } from '@/app/providers'
 import { DashboardSkeleton } from '@/components/shared'
 import { StatCards } from './StatCards'
-import { UsageAnalytics } from './UsageAnalytics'
+
+/** Lazy-loaded so recharts/es-toolkit stay out of this chunk (avoids Rolldown minify collision). */
+const UsageAnalytics = lazy(() =>
+  import('./UsageAnalytics').then((m) => ({ default: m.UsageAnalytics })),
+)
 import { AgentMetrics } from './AgentMetrics'
 import { HealthScoreWidget } from './HealthScoreWidget'
 import { RecentGenerations } from './RecentGenerations'
@@ -64,7 +69,13 @@ export function DashboardPage() {
       <StatCards stats={stats.data} />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <UsageAnalytics data={stats.data.usage} />
+        <Suspense
+          fallback={
+            <div className="glass lg:col-span-2 h-64 animate-pulse rounded-xl border border-border" />
+          }
+        >
+          <UsageAnalytics data={stats.data.usage} />
+        </Suspense>
         <HealthScoreWidget health={mockCtoReview.healthScore} />
       </div>
 

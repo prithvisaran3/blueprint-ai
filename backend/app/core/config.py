@@ -109,7 +109,11 @@ class Settings(BaseSettings):
 
     # --- CORS ----------------------------------------------------------------
     cors_origins: list[str] = Field(
-        default_factory=lambda: ["http://localhost:5173", "http://localhost:3000"]
+        default_factory=lambda: [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "https://blueprint-ai-rust.vercel.app",
+        ]
     )
 
     @field_validator("cors_origins", mode="before")

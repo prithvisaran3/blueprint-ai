@@ -84,8 +84,40 @@ Blueprint already creates **one Supabase user per GitHub account**. Projects and
 If **Continue with GitHub** always signs you in as the same person (e.g. `prithvisaran.s@gmail.com`) without asking:
 
 1. **GitHub is reusing your browser session** — you stay logged into github.com as one user, so OAuth completes instantly.
-2. The app sends `prompt=select_account` so GitHub should show an **account picker**. Pick another account or “Sign in with a different account”.
+2. The app opens GitHub in the **same tab**. Complete authorization there — do not copy the callback URL into another browser.
 3. To test as another person: **Sign out** from Blueprint (top bar), then GitHub login again, or use an **incognito/private** window with a different GitHub login.
 4. Do not use **demo/mock mode** (`VITE_USE_MOCKS=true`) for real multi-user tests — that always uses a fake demo user.
 
 **Sign out** (Blueprint top bar) only clears this app’s session. Switching GitHub users still requires choosing a different account on GitHub’s screen (or signing out of github.com).
+
+## PKCE code verifier missing
+
+If the browser console shows:
+
+```text
+AuthPKCECodeVerifierMissingError: PKCE code verifier not found in storage
+```
+
+The OAuth round-trip lost the temporary PKCE secret (stale tab, cleared storage, or opening the callback in a different browser).
+
+### Fix
+
+1. Close other Blueprint tabs.
+2. Go to `/login` and click **Continue with GitHub** again.
+3. Finish GitHub authorization in the **same tab** — do not paste `/auth/callback?code=...` elsewhere.
+
+The app stores the PKCE verifier in **localStorage** for this Vite SPA. Do not block storage for the site.
+
+## Dashboard API / CORS errors
+
+If the console shows `blocked by CORS policy` for `blueprint-ai-backend-*.onrender.com`:
+
+1. Render → your backend service → **Environment** → set `CORS_ORIGINS` to a JSON array including your Vercel URL, e.g.:
+
+   ```json
+   ["https://blueprint-ai-rust.vercel.app","http://localhost:5173"]
+   ```
+
+2. Redeploy the backend (Render free tier may take ~30s to wake up on first request).
+
+Without this, GitHub login can succeed but the dashboard cannot load projects/history from the API.

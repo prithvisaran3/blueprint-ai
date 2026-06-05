@@ -33,9 +33,9 @@ services:
         sync: false
       - key: SUPABASE_JWT_AUD
         value: authenticated
-      # Comma-separated allowed frontend origins (set to your Vercel URL).
+      # JSON array of allowed frontend origins (must include your Vercel URL).
       - key: CORS_ORIGINS
-        sync: false
+        value: '["https://blueprint-ai-rust.vercel.app","http://localhost:5173"]'
       # LLM provider (OpenRouter recommended for free tier).
       - key: LLM_PROVIDER
         value: openrouter
