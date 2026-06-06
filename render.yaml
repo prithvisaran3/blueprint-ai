@@ -42,7 +42,7 @@ services:
       - key: OPENROUTER_API_KEY
         sync: false
       - key: OPENROUTER_MODEL
-        value: meta-llama/llama-3.3-70b-instruct:free
+        value: openai/gpt-oss-120b:free
       - key: OPENROUTER_MODEL_FAST
         value: openai/gpt-oss-20b:free
       - key: OPENROUTER_APP_URL

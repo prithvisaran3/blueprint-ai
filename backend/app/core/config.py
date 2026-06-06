@@ -58,12 +58,15 @@ class Settings(BaseSettings):
     llm_stub_mode: bool = Field(default=False)
 
     # OpenRouter — free-tier models via https://openrouter.ai (OpenAI-compatible).
+    # IMPORTANT: every agent uses structured output (response_format / JSON
+    # schema), so models MUST support `response_format`. Many free models (e.g.
+    # llama-3.3-70b:free, mistral-7b:free) either 404 or reject response_format,
+    # which forces a stub fallback. The gpt-oss family supports it reliably.
     openrouter_api_key: str = Field(default="")
-    # Primary model — Llama 3.3 70B Instruct (free): strong reasoning for the
-    # open-ended architect/frontend prompts. (Older mistral-7b:free was retired
-    # from OpenRouter and now 404s.)
-    openrouter_model: str = Field(default="meta-llama/llama-3.3-70b-instruct:free")
-    # Fallback when primary has no OpenRouter endpoints (404) or rate-limits.
+    # Primary — gpt-oss-120b (free): larger model, best for the complex Planner
+    # schema and the open-ended architect/frontend prompts.
+    openrouter_model: str = Field(default="openai/gpt-oss-120b:free")
+    # Fast fallback — gpt-oss-20b (free): lower latency, also structured-capable.
     openrouter_model_fast: str = Field(default="openai/gpt-oss-20b:free")
     openrouter_base_url: str = Field(default="https://openrouter.ai/api/v1")
     openrouter_app_url: str = Field(default="https://blueprint-ai-rust.vercel.app")
