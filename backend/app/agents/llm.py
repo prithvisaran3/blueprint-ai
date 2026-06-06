@@ -8,6 +8,7 @@ to the deterministic stub so the whole pipeline still runs end-to-end.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -117,6 +118,49 @@ def _should_fallback_to_stub(exc: Exception) -> bool:
     )
 
 
+# Permanent failures: retrying the same models in-run cannot help (dead model,
+# exhausted credits, unsupported feature, or a schema/parse mismatch). Checked
+# first so e.g. Gemini "RESOURCE_EXHAUSTED: credits depleted" is treated as
+# permanent rather than a transient rate-limit.
+_PERMANENT_TOKENS = (
+    "credit",
+    "depleted",
+    "insufficient",
+    "404",
+    "no endpoints",
+    "response_format",
+    "not supported",
+    "unsupported",
+    "parse",
+    "json",
+    "validation",
+    "schema",
+)
+# Transient failures worth a short backoff + retry (free-tier upstream rate
+# limits, brief provider overloads, timeouts).
+_TRANSIENT_TOKENS = (
+    "429",
+    "rate limit",
+    "rate-limited",
+    "temporarily",
+    "overloaded",
+    "resource_exhausted",
+    "timeout",
+    "timed out",
+    "502",
+    "503",
+    "504",
+)
+
+
+def _is_transient(exc: Exception) -> bool:
+    """True when a failure is worth retrying after a short backoff."""
+    err = f"{type(exc).__name__} {exc}".lower()
+    if any(token in err for token in _PERMANENT_TOKENS):
+        return False
+    return any(token in err for token in _TRANSIENT_TOKENS)
+
+
 # Per-agent model preference (OpenRouter). No single free model handles every
 # schema: the large model reasons deeply and draws rich diagrams but truncates
 # token-heavy JSON at its 8k output ceiling; the fast model stays under that
@@ -156,8 +200,14 @@ def _model_chain(agent: AgentName, settings: Settings) -> list[str]:
 
 async def _try_model(
     schema: Any, messages: list[Any], settings: Settings, model_name: str, agent: AgentName
-) -> tuple[dict[str, Any], int] | None:
-    """One structured-output attempt. Returns ``(output, tokens)`` or ``None``."""
+) -> tuple[str, tuple[dict[str, Any], int] | None]:
+    """One structured-output attempt.
+
+    Returns a ``(status, payload)`` pair where ``status`` is one of:
+    ``"ok"`` (payload is ``(output, tokens)``), ``"retry"`` (transient failure
+    worth a backoff), or ``"skip"`` (permanent failure — try the next model /
+    stub immediately).
+    """
     model = _get_chat_model(settings, model_name)
     structured = model.with_structured_output(schema, include_raw=True)
     try:
@@ -172,7 +222,7 @@ async def _try_model(
             type(exc).__name__,
             exc,
         )
-        return None
+        return ("retry" if _is_transient(exc) else "skip", None)
 
     parsed = result.get("parsed") if isinstance(result, dict) else None
     if parsed is None:
@@ -182,7 +232,7 @@ async def _try_model(
             model_name,
             f": {result.get('parsing_error')}" if isinstance(result, dict) else "",
         )
-        return None
+        return ("skip", None)
 
     output = parsed.model_dump(mode="json")
     raw = result.get("raw") if isinstance(result, dict) else None
@@ -191,7 +241,13 @@ async def _try_model(
     if isinstance(usage, dict) and usage.get("total_tokens"):
         tokens = int(usage["total_tokens"])
     logger.info("LLM ok for %s on %s (tokens=%d)", agent.value, model_name, tokens)
-    return output, tokens
+    return ("ok", (output, tokens))
+
+
+# Backoff schedule (seconds) for retrying the model chain when every model is
+# transiently rate-limited. OpenRouter free-tier 429s clear within ~30s, so two
+# extra passes cover most spikes without inflating latency on permanent errors.
+_RETRY_BACKOFFS = (12.0, 24.0)
 
 
 async def generate_structured(
@@ -217,10 +273,28 @@ async def generate_structured(
     from langchain_core.messages import HumanMessage, SystemMessage
 
     messages = [SystemMessage(content=system), HumanMessage(content=human)]
-    for model_name in _model_chain(agent, settings):
-        result = await _try_model(schema, messages, settings, model_name, agent)
-        if result is not None:
-            return result
+    chain = _model_chain(agent, settings)
+    # Pass 0 is the initial attempt; subsequent passes only run if every model in
+    # the chain failed *transiently* (e.g. free-tier 429), backing off first so a
+    # brief rate-limit spike doesn't degrade the run to a stub.
+    for attempt, backoff in enumerate((0.0, *_RETRY_BACKOFFS)):
+        if backoff:
+            logger.info(
+                "All models rate-limited for %s; backing off %.0fs then retrying (pass %d)",
+                agent.value,
+                backoff,
+                attempt,
+            )
+            await asyncio.sleep(backoff)
+        transient_only = True
+        for model_name in chain:
+            status, payload = await _try_model(schema, messages, settings, model_name, agent)
+            if status == "ok" and payload is not None:
+                return payload
+            if status != "retry":
+                transient_only = False
+        if not transient_only:
+            break
 
     logger.warning("All LLM attempts failed for %s — using stub output", agent.value)
     return _stub_output(agent, idea)
