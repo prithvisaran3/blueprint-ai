@@ -180,10 +180,13 @@ _FAST_FIRST = frozenset(
 )
 
 
-# Agents whose output is long free-form markdown: the large model reliably runs
-# to its 8k ceiling on these (a slow ~4-5 min truncation), so skip it entirely
-# and use only the fast model before the stub.
-_FAST_ONLY = frozenset({AgentName.DOCUMENTATION})
+# Agents restricted to the fast model only (no large-model fallback). Empty for
+# now: documentation used to live here to dodge the large model's slow ~4-5 min
+# truncation on long markdown, but that left a single fast-model schema miss with
+# no recourse but the stub. It now falls back to the large model (which adheres
+# to the schema more reliably) before stubbing — only on the failure path, so the
+# common case is unaffected.
+_FAST_ONLY: frozenset[AgentName] = frozenset()
 
 
 def _model_chain(agent: AgentName, settings: Settings) -> list[str]:
