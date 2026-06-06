@@ -59,8 +59,10 @@ class Settings(BaseSettings):
 
     # OpenRouter — free-tier models via https://openrouter.ai (OpenAI-compatible).
     openrouter_api_key: str = Field(default="")
-    # Primary model — Mistral 7B Instruct (free, 32k context).
-    openrouter_model: str = Field(default="mistralai/mistral-7b-instruct:free")
+    # Primary model — Llama 3.3 70B Instruct (free): strong reasoning for the
+    # open-ended architect/frontend prompts. (Older mistral-7b:free was retired
+    # from OpenRouter and now 404s.)
+    openrouter_model: str = Field(default="meta-llama/llama-3.3-70b-instruct:free")
     # Fallback when primary has no OpenRouter endpoints (404) or rate-limits.
     openrouter_model_fast: str = Field(default="openai/gpt-oss-20b:free")
     openrouter_base_url: str = Field(default="https://openrouter.ai/api/v1")
