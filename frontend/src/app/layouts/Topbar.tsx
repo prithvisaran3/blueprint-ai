@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { Moon, Sun, Plus, Search, LogOut, User as UserIcon } from 'lucide-react'
+import { Moon, Sun, Plus, Search, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,9 +18,13 @@ export function Topbar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
-  const initials = user?.displayName
-    ? user.displayName.split(' ').map((p) => p[0]).join('').slice(0, 2)
-    : 'AR'
+  const initials = (() => {
+    const source = user?.displayName?.trim() || user?.email?.trim()
+    if (!source) return 'U'
+    const parts = source.split(/\s+/).filter(Boolean)
+    const letters = (parts.length > 1 ? parts[0][0] + parts[1][0] : source.slice(0, 2)) || 'U'
+    return letters.toUpperCase()
+  })()
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/70 px-4 backdrop-blur-xl lg:px-6">
@@ -42,6 +46,7 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <button className="rounded-full outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring/60">
               <Avatar>
+                {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.displayName ?? 'User'} />}
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
             </button>
@@ -52,13 +57,9 @@ export function Topbar() {
               <p className="text-xs text-muted-foreground">{user?.email ?? 'not signed in'}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <UserIcon className="size-4" /> Profile
-            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                logout()
-                navigate('/login')
+                void logout().finally(() => navigate('/login', { replace: true }))
               }}
             >
               <LogOut className="size-4" /> Sign out

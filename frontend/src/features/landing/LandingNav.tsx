@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { GitBranch } from 'lucide-react'
+import { GitBranch, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/shared'
+import { useAuth } from '@/app/providers'
 
 export function LandingNav() {
+  const { isAuthenticated, isLoading } = useAuth()
+
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -23,9 +26,11 @@ export function LandingNav() {
           <a href="#pipeline" className="transition-colors hover:text-foreground">
             Pipeline
           </a>
-          <Link to="/dashboard" className="transition-colors hover:text-foreground">
-            Dashboard
-          </Link>
+          {isAuthenticated && (
+            <Link to="/dashboard" className="transition-colors hover:text-foreground">
+              Dashboard
+            </Link>
+          )}
         </nav>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" asChild>
@@ -33,9 +38,21 @@ export function LandingNav() {
               <GitBranch className="size-4.5" />
             </a>
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/login">Sign in</Link>
-          </Button>
+          {/* Reflect auth state: a signed-in user must never see "Sign in". While
+              the session is still restoring we render nothing to avoid a flash. */}
+          {isLoading ? (
+            <div className="h-8 w-20" aria-hidden />
+          ) : isAuthenticated ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/dashboard">
+                <LayoutDashboard className="size-4" /> Dashboard
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/login">Sign in</Link>
+            </Button>
+          )}
         </div>
       </div>
     </motion.header>
